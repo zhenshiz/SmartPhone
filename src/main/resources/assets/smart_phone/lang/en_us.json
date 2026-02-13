@@ -1,0 +1,39 @@
+{
+  "command.target.player.only": "此命令的目标对象应该是玩家",
+  "command.target.entity.only": "此命令的目标对象应该是实体",
+  "smartPhone.command.reload": "已重载%s的手机信息缓存",
+
+  "smartPhone.data.phoneInfo.phoneWallpaper": "壁纸",
+  "smartPhone.data.phoneTimeSource.type": "手机时间类型",
+  "smartPhone.data.phoneTimeSource.type.realTime": "现实时间",
+  "smartPhone.data.phoneTimeSource.type.worldTime": "MC世界时间",
+  "smartPhone.data.phoneTimeSource.type.customTime": "自定义时间",
+  "smartPhone.data.phoneTimeSource.customTimeSource.segments": "自定义时间配置",
+  "smartPhone.data.phoneTimeSource.customTimeSource.timeSegment.startHour": "开始时间(小时)",
+  "smartPhone.data.phoneTimeSource.customTimeSource.timeSegment.startMin": "开始(分钟)",
+  "smartPhone.data.phoneTimeSource.customTimeSource.timeSegment.endHour": "结束时间(小时)",
+  "smartPhone.data.phoneTimeSource.customTimeSource.timeSegment.endMin": "结束时间(分钟)",
+  "smartPhone.data.phoneTimeSource.customTimeSource.timeSegment.durationTicks": "对应现实时间(单位秒)",
+  "smartPhone.data.phoneTimeSource.customTimeSource.timeSegment.freezeTime": "是否冻结时间",
+
+  "smartPhone.ui.lock.name": "%s的Phone",
+  "smartPhone.ui.lock.tip": "向上滑动以解锁",
+  "smartPhone.ui.homeScreen.uninstall": "已卸载 %s",
+  "smartPhone.ui.homeScreen.not.uninstall": "该应用无法卸载",
+  "smartPhone.ui.app.setting": "设置",
+  "smartPhone.ui.app.appStore": "应用商店",
+  "smartPhone.ui.app.appStore.installed": "下载",
+  "smartPhone.ui.app.appStore.uninstalled": "卸载",
+  "smartPhone.ui.app.notepad": "记事本",
+  "smartPhone.ui.app.snakeGame": "贪吃蛇",
+  "smartPhone.ui.app.snakeGame.description": "经典小游戏",
+  "smartPhone.ui.app.snakeGame.startGame": "开始游戏",
+  "smartPhone.ui.app.snakeGame.resetGame": "重新开始",
+  "smartPhone.ui.app.snakeGame.endGame": "游戏结束！",
+  "smartPhone.ui.app.snakeGame.score": "分数：",
+  "smartPhone.ui.app.appStore.search": "请输入App名称",
+
+  "smartPhone.ui.button.delete": "删除",
+
+  "smartPhone.toast.app.uninstall": "该软件无法卸载"
+}
