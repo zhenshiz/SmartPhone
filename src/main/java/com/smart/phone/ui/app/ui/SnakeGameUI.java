@@ -7,9 +7,15 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
+import com.smart.phone.ui.app.ui.game.Direction;
+import com.smart.phone.ui.app.ui.game.Point;
 import com.smart.phone.ui.view.HomeScreen;
+import com.smart.phone.util.UIElementUtil;
 import net.minecraft.network.chat.Component;
-import org.appliedenergistics.yoga.*;
+import org.appliedenergistics.yoga.YogaAlign;
+import org.appliedenergistics.yoga.YogaEdge;
+import org.appliedenergistics.yoga.YogaJustify;
+import org.appliedenergistics.yoga.YogaPositionType;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -46,15 +52,6 @@ public class SnakeGameUI extends AppUI {
     private final Button restartButton;
     private final Button startButton;
 
-    // 方向枚举
-    private enum Direction {
-        UP, DOWN, LEFT, RIGHT
-    }
-
-    // 点坐标类
-    private record Point(int x, int y) {
-    }
-
     public SnakeGameUI(HomeScreen homeScreen) {
         super(homeScreen);
 
@@ -87,13 +84,13 @@ public class SnakeGameUI extends AppUI {
         scoreLabel = label;
 
         // 创建开始按钮
-        startButton = (Button) new Button().setText("smartPhone.ui.app.snakeGame.startGame").textStyle(textStyle -> textStyle.fontSize(6)).layout(layout -> {
+        startButton = (Button) new Button().setText("smartPhone.ui.app.game.startGame").textStyle(textStyle -> textStyle.fontSize(6)).layout(layout -> {
             layout.setPositionType(YogaPositionType.ABSOLUTE);
             layout.top(3);
         }).addEventListener(UIEvents.CLICK, event -> startGame());
 
         // 创建重新开始按钮
-        restartButton = (Button) new Button().setText("smartPhone.ui.app.snakeGame.resetGame").textStyle(textStyle -> textStyle.fontSize(6)).layout(layout -> {
+        restartButton = (Button) new Button().setText("smartPhone.ui.app.game.resetGame").textStyle(textStyle -> textStyle.fontSize(6)).layout(layout -> {
             layout.setPositionType(YogaPositionType.ABSOLUTE);
             layout.top(3);
         }).addEventListener(UIEvents.CLICK, event -> startGame());
@@ -130,7 +127,7 @@ public class SnakeGameUI extends AppUI {
         canvasContainer.addChildren(gameCanvas);
 
         // 控制按钮区域
-        UIElement controls = createControlButtons();
+        UIElement controls = UIElementUtil.createControlButtons(this::setDirection);
 
         // 开始/重新开始按钮
         UIElement buttonContainer = new UIElement()
@@ -145,45 +142,6 @@ public class SnakeGameUI extends AppUI {
 
         // 添加所有元素到滚动视图
         appScrollView.viewContainer.addChildren(scoreContainer, canvasContainer, controls, buttonContainer);
-    }
-
-    private UIElement createControlButtons() {
-        UIElement controls = new UIElement()
-                .layout(layout -> {
-                    layout.setWidthPercent(80);
-                    layout.setHeight(30);
-                    layout.setFlexDirection(YogaFlexDirection.COLUMN);
-                    layout.setAlignItems(YogaAlign.CENTER);
-                });
-
-        // 上按钮
-        UIElement topButton = new UIElement().layout(layout -> layout.setJustifyContent(YogaJustify.CENTER).setFlexDirection(YogaFlexDirection.ROW).setWidthPercent(100).setHeightPercent(50));
-        Button upButton = createDirectionButton("W", Direction.UP);
-        topButton.addChildren(upButton);
-
-        // 下按钮
-        UIElement bottomButton = new UIElement().layout(layout -> layout.setJustifyContent(YogaJustify.CENTER).setFlexDirection(YogaFlexDirection.ROW).setWidthPercent(100).setHeightPercent(50));
-        Button leftButton = createDirectionButton("A", Direction.LEFT);
-        Button downButton = createDirectionButton("S", Direction.DOWN);
-        Button rightButton = createDirectionButton("D", Direction.RIGHT);
-        bottomButton.addChildren(leftButton, downButton, rightButton);
-
-        controls.addChildren(topButton, bottomButton);
-
-        return controls;
-    }
-
-    private Button createDirectionButton(String text, Direction dir) {
-        Button button = new Button();
-        button.setText(text);
-        button.textStyle(style -> style.fontSize(6));
-        button.layout(layout -> {
-            layout.setWidthPercent(30);
-            layout.setHeightPercent(100);
-        });
-        button.style(style -> style.backgroundTexture(new ColorRectTexture(ColorPattern.T_GRAY.color)));
-        button.addEventListener(UIEvents.CLICK, event -> setDirection(dir));
-        return button;
     }
 
     private void initializeGame() {
@@ -247,7 +205,7 @@ public class SnakeGameUI extends AppUI {
     }
 
     private void updateScore() {
-        scoreLabel.setText(Component.translatable("smartPhone.ui.app.snakeGame.score").getString() + score);
+        scoreLabel.setText(Component.translatable("smartPhone.ui.app.game.score", score));
     }
 
     private void gameOver() {
@@ -275,10 +233,10 @@ public class SnakeGameUI extends AppUI {
         // 计算新的头部位置
         Point head = snake.getFirst();
         Point newHead = switch (direction) {
-            case UP -> new Point(head.x, head.y - 1);
-            case DOWN -> new Point(head.x, head.y + 1);
-            case LEFT -> new Point(head.x - 1, head.y);
-            case RIGHT -> new Point(head.x + 1, head.y);
+            case UP -> new Point(head.x(), head.y() - 1);
+            case DOWN -> new Point(head.x(), head.y() + 1);
+            case LEFT -> new Point(head.x() - 1, head.y());
+            case RIGHT -> new Point(head.x() + 1, head.y());
         };
 
         // 检查碰撞
@@ -304,7 +262,7 @@ public class SnakeGameUI extends AppUI {
 
     private boolean checkCollision(Point point) {
         // 检查边界碰撞
-        if (point.x < 0 || point.x >= GAME_WIDTH || point.y < 0 || point.y >= GAME_HEIGHT) {
+        if (point.x() < 0 || point.x() >= GAME_WIDTH || point.y() < 0 || point.y() >= GAME_HEIGHT) {
             return true;
         }
 
@@ -336,8 +294,8 @@ public class SnakeGameUI extends AppUI {
             // 绘制蛇
             for (int i = 0; i < snake.size(); i++) {
                 Point segment = snake.get(i);
-                int x = Math.round(screenX + segment.x * GRID_SIZE);
-                int y = Math.round(screenY + segment.y * GRID_SIZE);
+                int x = Math.round(screenX + segment.x() * GRID_SIZE);
+                int y = Math.round(screenY + segment.y() * GRID_SIZE);
 
                 // 蛇头用不同的颜色
                 int color = (i == 0) ? ColorPattern.GREEN.color : ColorPattern.T_GREEN.color;
@@ -347,8 +305,8 @@ public class SnakeGameUI extends AppUI {
 
             // 绘制食物
             if (food != null) {
-                int foodX = Math.round(screenX + food.x * GRID_SIZE);
-                int foodY = Math.round(screenY + food.y * GRID_SIZE);
+                int foodX = Math.round(screenX + food.x() * GRID_SIZE);
+                int foodY = Math.round(screenY + food.y() * GRID_SIZE);
                 guiGraphics.fill(foodX, foodY, foodX + GRID_SIZE - 1, foodY + GRID_SIZE - 1, ColorPattern.RED.color);
             }
 
@@ -357,7 +315,7 @@ public class SnakeGameUI extends AppUI {
                 float textX = screenX + (float) (GAME_WIDTH * GRID_SIZE) / 2;
                 float textY = screenY + (float) (GAME_HEIGHT * GRID_SIZE) / 2;
 
-                String gameOverText = Component.translatable("smartPhone.ui.app.snakeGame.endGame").getString();
+                String gameOverText = Component.translatable("smartPhone.ui.app.game.endGame").getString();
                 float textWidth = minecraft.font.width(gameOverText);
 
                 guiGraphics.drawString(minecraft.font, gameOverText, (int) (textX - textWidth / 2), (int) textY, ColorPattern.RED.color);

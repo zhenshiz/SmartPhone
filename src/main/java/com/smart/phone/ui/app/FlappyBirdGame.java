@@ -5,31 +5,26 @@ import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
 import com.smart.phone.SmartPhone;
-import com.smart.phone.ui.app.ui.SnakeGameUI;
+import com.smart.phone.ui.app.ui.FlappyBirdUI;
 import com.smart.phone.ui.view.HomeScreen;
 import net.minecraft.network.chat.Component;
 
-@LDLRegister(name = SnakeGame.SNAKE_GAME_ID, registry = IApp.ID)
-public class SnakeGame extends IApp {
-    public static final String SNAKE_GAME_ID = SmartPhone.MOD_ID + ":snake_game";
+@LDLRegister(name = FlappyBirdGame.FLAPPY_BIRD, registry = IApp.ID)
+public class FlappyBirdGame extends IApp {
+    public static final String FLAPPY_BIRD = SmartPhone.MOD_ID + ":flappy_bird";
 
     @Override
     public Component getDisplayName() {
-        return Component.translatable("smartPhone.ui.app.snakeGame");
-    }
-
-    @Override
-    public Component getDescription() {
-        return Component.translatable("smartPhone.ui.app.snakeGame.description");
+        return Component.translatable("smartPhone.ui.app.flappyBird");
     }
 
     @Override
     public IGuiTexture getIcon() {
-        return SpriteTexture.of(SmartPhone.formattedMod("textures/ui/app/snake_game.png"));
+        return SpriteTexture.of(SmartPhone.formattedMod("textures/ui/app/flappy_bird.png"));
     }
 
     @Override
     public UIElement createAppUI(HomeScreen homeScreen) {
-        return new SnakeGameUI(homeScreen);
+        return new FlappyBirdUI(homeScreen);
     }
 }

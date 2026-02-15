@@ -8,16 +8,10 @@ import com.smart.phone.SmartPhone;
 import com.smart.phone.ui.app.ui.AppStoreUI;
 import com.smart.phone.ui.view.HomeScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
 @LDLRegister(name = AppStore.APP_STORE_ID, registry = IApp.ID)
 public class AppStore extends IApp {
     public static final String APP_STORE_ID = SmartPhone.MOD_ID + ":app_store";
-
-    @Override
-    public ResourceLocation getPhoneId() {
-        return ResourceLocation.parse(APP_STORE_ID);
-    }
 
     @Override
     public Component getDisplayName() {

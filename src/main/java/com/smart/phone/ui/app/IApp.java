@@ -14,7 +14,6 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
 
 import java.util.function.Supplier;
 
@@ -24,9 +23,6 @@ public abstract class IApp implements ILDLRegister<IApp, Supplier<IApp>>, IPersi
                     .orElseGet(LDLibExtraCodecs::errorDecoder));
     public static final StreamCodec<ByteBuf, IApp> STREAM_CODEC = ByteBufCodecs.fromCodec(CODEC);
     public static final String ID = SmartPhone.MOD_ID + ":app";
-
-    // 唯一标识
-    abstract public ResourceLocation getPhoneId();
 
     // 应用名
     abstract public Component getDisplayName();
@@ -62,11 +58,11 @@ public abstract class IApp implements ILDLRegister<IApp, Supplier<IApp>>, IPersi
         return AppOpenResult.allow();
     }
 
-    // 关闭应用时调用
-    public void onClose() {
+    //打开应用时调用
+    public void onOpen(UIElement appUI) {
     }
 
-    // 最小化时
-    public void onMinimize() {
+    // 关闭应用时调用
+    public void onClose(UIElement appUI) {
     }
 }

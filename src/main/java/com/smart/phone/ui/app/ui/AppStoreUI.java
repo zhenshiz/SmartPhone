@@ -98,7 +98,7 @@ public class AppStoreUI extends AppUI {
                     Toast.show(this, Component.translatable("smartPhone.toast.app.uninstall"), 2.0f);
                     return;
                 }
-                installedApps.removeIf(app -> app.getPhoneId().equals(iApp.getPhoneId()));
+                installedApps.removeIf(app -> app.name().equals(iApp.name()));
             } else {
                 installedApps.add(iApp);
             }
@@ -117,7 +117,7 @@ public class AppStoreUI extends AppUI {
 
     private boolean checkAppInstalled(IApp targetApp) {
         for (IApp installedApp : this.homeScreen.getPhoneUI().phoneInfo.getInstalledApps()) {
-            if (installedApp.getPhoneId().equals(targetApp.getPhoneId())) {
+            if (installedApp.name().equals(targetApp.name())) {
                 return true;
             }
         }

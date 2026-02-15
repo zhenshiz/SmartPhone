@@ -28,7 +28,7 @@ import java.util.List;
 @Getter
 public class HomeScreen extends UIElement {
     private final PhoneUI phoneUI;
-    public final ScrollerView appScrollView;
+    public final ScrollerView appScrollView = new  ScrollerView();
     public final UIElement backButton;
     //当前正在显示的APP
     public UIElement appUI;
@@ -61,12 +61,16 @@ public class HomeScreen extends UIElement {
             layout.setHeight(1);
             layout.setWidthPercent(50);
         }).style(style -> style.backgroundTexture(new ColorRectTexture(ColorPattern.BLACK.color))).addEventListener(UIEvents.CLICK, event -> {
-            this.removeChild(appUI);
-            this.appUI = null;
-            this.iApp = null;
+            if (this.appUI != null) {
+                this.iApp.onClose(appUI);
+                this.removeChild(appUI);
+                this.appUI = null;
+                this.iApp = null;
+
+                appScrollView.viewContainer.setVisible(true);
+            }
         }));
 
-        appScrollView = new ScrollerView();
         appScrollView.layout(layout -> {
             layout.setWidthPercent(100);
             layout.top(8);
@@ -95,6 +99,7 @@ public class HomeScreen extends UIElement {
             UIElement appIcon = new UIElement().layout(layout -> {
                 layout.setFlexDirection(YogaFlexDirection.COLUMN);
                 layout.setAlignItems(YogaAlign.CENTER);
+                layout.setWidthPercent(30);
             });
 
             UIElement iconBackground = new UIElement().layout(layout -> {
@@ -161,7 +166,9 @@ public class HomeScreen extends UIElement {
                     appUI.addChildren(backButton);
                     this.appUI = appUI;
                     this.iApp = iApp;
+                    appScrollView.viewContainer.setVisible(false);
                     this.addChildren(appUI);
+                    iApp.onOpen(appUI);
                 } else if (event.button == 1) {
                     UIElement clickedElement = event.currentElement;
                     float posX = clickedElement.getPositionX();
@@ -175,7 +182,7 @@ public class HomeScreen extends UIElement {
             });
 
             appIcon.addChildren(iconBackground,
-                    new Label().setText(iApp.getDisplayName()).textStyle(textStyle -> textStyle.adaptiveHeight(true).adaptiveWidth(true).fontSize(4)));
+                    new Label().setText(iApp.getDisplayName()).textStyle(textStyle -> textStyle.adaptiveHeight(true).adaptiveWidth(true).fontSize(5)));
             appScrollView.viewContainer.addChildren(appIcon);
         }
     }

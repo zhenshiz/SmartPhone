@@ -8,16 +8,10 @@ import com.smart.phone.SmartPhone;
 import com.smart.phone.ui.app.ui.NotepadUI;
 import com.smart.phone.ui.view.HomeScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
 @LDLRegister(name = Notepad.NOTEPAD_ID, registry = IApp.ID)
 public class Notepad extends IApp {
     public static final String NOTEPAD_ID = SmartPhone.MOD_ID + ":notepad";
-
-    @Override
-    public ResourceLocation getPhoneId() {
-        return ResourceLocation.parse(NOTEPAD_ID);
-    }
 
     @Override
     public Component getDisplayName() {

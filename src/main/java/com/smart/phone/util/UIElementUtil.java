@@ -2,17 +2,19 @@ package com.smart.phone.util;
 
 import com.lowdragmc.lowdraglib2.configurator.ui.SearchComponentConfigurator;
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
+import com.lowdragmc.lowdraglib2.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.data.TextWrap;
 import com.lowdragmc.lowdraglib2.gui.ui.data.Vertical;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Menu;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.TextElement;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.utils.UIElementProvider;
 import com.lowdragmc.lowdraglib2.gui.util.TreeBuilder;
 import com.lowdragmc.lowdraglib2.gui.util.TreeNode;
 import com.lowdragmc.lowdraglib2.utils.search.IResultHandler;
+import com.smart.phone.ui.app.ui.game.Direction;
 import com.smart.phone.util.common.BeanUtil;
 import org.appliedenergistics.yoga.*;
 import org.jetbrains.annotations.NotNull;
@@ -53,17 +55,56 @@ public class UIElementUtil {
                     }).style(style -> style.backgroundTexture(ColorPattern.GRAY.rectTexture()));
                 }
                 return new UIElement().layout(layout -> {
-                            layout.setHeight(8);
-                            layout.setWidthPercent(100);
-                            layout.setFlexDirection(YogaFlexDirection.ROW);
-                            layout.setAlignItems(YogaAlign.CENTER);
-                        }).addChild(new Label().textStyle(textStyle -> textStyle.textAlignVertical(Vertical.CENTER).textWrap(TextWrap.HOVER_ROLL).fontSize(6))
-                                .setText(node.getB()).layout(layout -> layout.setFlexGrow(1)).setOverflow(YogaOverflow.HIDDEN));
+                    layout.setHeight(8);
+                    layout.setWidthPercent(100);
+                    layout.setFlexDirection(YogaFlexDirection.ROW);
+                    layout.setAlignItems(YogaAlign.CENTER);
+                }).addChild(new Label().textStyle(textStyle -> textStyle.textAlignVertical(Vertical.CENTER).textWrap(TextWrap.HOVER_ROLL).fontSize(6))
+                        .setText(node.getB()).layout(layout -> layout.setFlexGrow(1)).setOverflow(YogaOverflow.HIDDEN));
             }, parent).setHoverTextureProvider(TreeBuilder.Menu::hoverTextureProvider).setOnNodeClicked(TreeBuilder.Menu::handle);
         }
     }
 
-    public static <T, C> Menu<T, C> openMenu(float posX, float posY, TreeNode<T, C> menuNode, UIElementProvider<T> uiProvider, @NotNull UIElement parent) {
+    public static UIElement createControlButtons(Consumer<Direction> onDirectionClick) {
+        UIElement controls = new UIElement()
+                .layout(layout -> {
+                    layout.setWidthPercent(80);
+                    layout.setHeight(30);
+                    layout.setFlexDirection(YogaFlexDirection.COLUMN);
+                    layout.setAlignItems(YogaAlign.CENTER);
+                });
+
+        // 上按钮
+        UIElement topButton = new UIElement().layout(layout -> layout.setJustifyContent(YogaJustify.CENTER).setFlexDirection(YogaFlexDirection.ROW).setWidthPercent(100).setHeightPercent(50));
+        Button upButton = createDirectionButton("W", Direction.UP, onDirectionClick);
+        topButton.addChildren(upButton);
+
+        // 下按钮
+        UIElement bottomButton = new UIElement().layout(layout -> layout.setJustifyContent(YogaJustify.CENTER).setFlexDirection(YogaFlexDirection.ROW).setWidthPercent(100).setHeightPercent(50));
+        Button leftButton = createDirectionButton("A", Direction.LEFT, onDirectionClick);
+        Button downButton = createDirectionButton("S", Direction.DOWN, onDirectionClick);
+        Button rightButton = createDirectionButton("D", Direction.RIGHT, onDirectionClick);
+        bottomButton.addChildren(leftButton, downButton, rightButton);
+
+        controls.addChildren(topButton, bottomButton);
+
+        return controls;
+    }
+
+    private static Button createDirectionButton(String text, Direction dir, Consumer<Direction> onDirectionClick) {
+        Button button = new Button();
+        button.setText(text);
+        button.textStyle(style -> style.fontSize(6));
+        button.layout(layout -> {
+            layout.setWidthPercent(30);
+            layout.setHeightPercent(100);
+        });
+        button.style(style -> style.backgroundTexture(new ColorRectTexture(ColorPattern.T_GRAY.color)));
+        button.addEventListener(UIEvents.CLICK, event -> onDirectionClick.accept(dir));
+        return button;
+    }
+
+    private static <T, C> Menu<T, C> openMenu(float posX, float posY, TreeNode<T, C> menuNode, UIElementProvider<T> uiProvider, @NotNull UIElement parent) {
         Menu<T, C> menu = new Menu<>(menuNode, uiProvider);
 
         float relativeX = posX - parent.getContentX();
@@ -100,8 +141,14 @@ public class UIElementUtil {
                 changed = true;
             }
 
-            if (newX < 0) { newX = 0; changed = true; }
-            if (newY < 0) { newY = 0; changed = true; }
+            if (newX < 0) {
+                newX = 0;
+                changed = true;
+            }
+            if (newY < 0) {
+                newY = 0;
+                changed = true;
+            }
 
             if (changed) {
                 float finalX = newX;

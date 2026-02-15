@@ -5,31 +5,26 @@ import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
 import com.smart.phone.SmartPhone;
-import com.smart.phone.ui.app.ui.SnakeGameUI;
+import com.smart.phone.ui.app.ui.PianoTilesUI;
 import com.smart.phone.ui.view.HomeScreen;
 import net.minecraft.network.chat.Component;
 
-@LDLRegister(name = SnakeGame.SNAKE_GAME_ID, registry = IApp.ID)
-public class SnakeGame extends IApp {
-    public static final String SNAKE_GAME_ID = SmartPhone.MOD_ID + ":snake_game";
+@LDLRegister(name = PianoTilesGame.PIANO_TILES, registry = IApp.ID)
+public class PianoTilesGame extends IApp {
+    public static final String PIANO_TILES = SmartPhone.MOD_ID + ":piano_tiles";
 
     @Override
     public Component getDisplayName() {
-        return Component.translatable("smartPhone.ui.app.snakeGame");
-    }
-
-    @Override
-    public Component getDescription() {
-        return Component.translatable("smartPhone.ui.app.snakeGame.description");
+        return Component.translatable("smartPhone.ui.app.pianoTiles");
     }
 
     @Override
     public IGuiTexture getIcon() {
-        return SpriteTexture.of(SmartPhone.formattedMod("textures/ui/app/snake_game.png"));
+        return SpriteTexture.of(SmartPhone.formattedMod("textures/ui/app/piano_tiles.png"));
     }
 
     @Override
     public UIElement createAppUI(HomeScreen homeScreen) {
-        return new SnakeGameUI(homeScreen);
+        return new PianoTilesUI(homeScreen);
     }
 }

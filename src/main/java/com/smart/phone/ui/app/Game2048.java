@@ -5,31 +5,32 @@ import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
 import com.smart.phone.SmartPhone;
-import com.smart.phone.ui.app.ui.SnakeGameUI;
+import com.smart.phone.ui.app.ui.Game2048UI;
 import com.smart.phone.ui.view.HomeScreen;
 import net.minecraft.network.chat.Component;
 
-@LDLRegister(name = SnakeGame.SNAKE_GAME_ID, registry = IApp.ID)
-public class SnakeGame extends IApp {
-    public static final String SNAKE_GAME_ID = SmartPhone.MOD_ID + ":snake_game";
+@LDLRegister(name = Game2048.GAME_2048, registry = IApp.ID)
+public class Game2048 extends IApp {
+    public static final String GAME_2048 = SmartPhone.MOD_ID + ":game_2048";
+
 
     @Override
     public Component getDisplayName() {
-        return Component.translatable("smartPhone.ui.app.snakeGame");
+        return Component.literal("2048");
     }
 
     @Override
     public Component getDescription() {
-        return Component.translatable("smartPhone.ui.app.snakeGame.description");
+        return Component.translatable("smartPhone.ui.app.game2048.description");
     }
 
     @Override
     public IGuiTexture getIcon() {
-        return SpriteTexture.of(SmartPhone.formattedMod("textures/ui/app/snake_game.png"));
+        return SpriteTexture.of(SmartPhone.formattedMod("textures/ui/app/2048.png"));
     }
 
     @Override
     public UIElement createAppUI(HomeScreen homeScreen) {
-        return new SnakeGameUI(homeScreen);
+        return new Game2048UI(homeScreen);
     }
 }
