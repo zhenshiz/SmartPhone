@@ -3,6 +3,9 @@
   "command.target.entity.only": "此命令的目标对象应该是实体",
   "smartPhone.command.reload": "已重载%s的手机信息缓存",
 
+  "itemGroup.smartPhone": "智能手机",
+  "item.smart_phone.phone": "手机",
+
   "smartPhone.data.phoneInfo.phoneWallpaper": "壁纸",
   "smartPhone.data.phoneTimeSource.type": "手机时间类型",
   "smartPhone.data.phoneTimeSource.type.realTime": "现实时间",

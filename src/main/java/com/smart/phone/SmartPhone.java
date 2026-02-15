@@ -36,6 +36,8 @@ public class SmartPhone {
 
     public SmartPhone(IEventBus modEventBus, ModContainer modContainer, Dist dist) {
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
+        SmartPhoneRegistries.ITEMS.register(modEventBus);
+        SmartPhoneRegistries.CREATIVE_TABS.register(modEventBus);
         AccessorRegistries.setPriority(0);
         AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(PhoneInfo.class)
                 .codec(PhoneInfo.CODEC)
