@@ -31,7 +31,7 @@ public class PianoTilesUI extends AppUI {
     private static final int LANE_WIDTH = GAME_WIDTH / LANE_COUNT;
 
     // 初始速度 (像素/tick)
-    private static final float INITIAL_SPEED = 3.0f; // 稍微快一点点
+    private static final float INITIAL_SPEED = 2.5f;
 
     // --- 游戏状态 ---
     private final LinkedList<Row> rows = new LinkedList<>();

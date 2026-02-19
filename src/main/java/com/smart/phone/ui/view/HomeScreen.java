@@ -104,10 +104,7 @@ public class HomeScreen extends UIElement {
 
             UIElement iconBackground = new UIElement().layout(layout -> {
                 layout.setWidth(12).setHeight(12).setMargin(YogaEdge.BOTTOM, 2).setJustifyContent(YogaJustify.CENTER).setAlignItems(YogaAlign.CENTER);
-            }).style(style -> style.backgroundTexture(Sprites.RECT_RD_SOLID));
-
-            UIElement icon = new UIElement().layout(layout -> layout.setWidthPercent(80).setHeightPercent(80)).style(style -> style.backgroundTexture(iApp.getIcon()));
-            iconBackground.addChildren(icon);
+            }).style(style -> style.backgroundTexture(iApp.getIcon()));
 
             iconBackground.addEventListener(UIEvents.MOUSE_DOWN, event -> {
                 if (event.button == 0) {

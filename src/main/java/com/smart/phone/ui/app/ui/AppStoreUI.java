@@ -61,10 +61,9 @@ public class AppStoreUI extends AppUI {
         });
         //左侧
         UIElement left = new UIElement().layout(layout -> layout.setFlexDirection(YogaFlexDirection.ROW).setWidthPercent(70).setHeightPercent(100).setJustifyContent(YogaJustify.FLEX_START).setAlignItems(YogaAlign.CENTER).setGap(YogaGutter.ALL, 2));
-        UIElement icon = new UIElement().layout(layout -> layout.setWidthPercent(80).setHeightPercent(80)).style(style -> style.backgroundTexture(iApp.getIcon()));
         UIElement iconBackground = new UIElement().layout(layout -> {
             layout.setWidth(20).setHeight(20).setJustifyContent(YogaJustify.CENTER).setAlignItems(YogaAlign.CENTER);
-        }).style(style -> style.backgroundTexture(Sprites.RECT_RD_SOLID)).addChildren(icon);
+        }).style(style -> style.backgroundTexture(iApp.getIcon()));
         left.addChildren(iconBackground, new UIElement().layout(layout -> {
             layout.setFlexDirection(YogaFlexDirection.COLUMN);
             layout.setAlignItems(YogaAlign.FLEX_START);

@@ -2,11 +2,14 @@ package com.smart.phone.ui.app.ui;
 
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
 import com.lowdragmc.lowdraglib2.gui.texture.ColorRectTexture;
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
+import com.smart.phone.SmartPhone;
 import com.smart.phone.ui.view.HomeScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -50,12 +53,12 @@ public class FlappyBirdUI extends AppUI {
     private final Label scoreLabel;
     private final Button restartButton;
     private final Button startButton;
+    private final IGuiTexture FLAPPY_BIRD = SpriteTexture.of(SmartPhone.formattedMod("textures/ui/flappy_bird.png"));
 
-    // 可变管道类 (为了方便移动)
     private static class MovingPipe {
         float x;
         int gapY;
-        boolean passed; // 是否已经计分
+        boolean passed;
 
         public MovingPipe(float x, int gapY) {
             this.x = x;
@@ -321,13 +324,8 @@ public class FlappyBirdUI extends AppUI {
             int birdDrawX = startX + (GAME_WIDTH - BIRD_SIZE) / 2;
             int birdDrawY = startY + Math.round(birdY);
 
-            // 黄色小鸟 0xFFFFD700
-            graphics.fill(birdDrawX, birdDrawY, birdDrawX + BIRD_SIZE, birdDrawY + BIRD_SIZE, 0xFFFFD700);
-            // 眼睛
-            graphics.fill(birdDrawX + BIRD_SIZE - 4, birdDrawY + 2, birdDrawX + BIRD_SIZE, birdDrawY + 6, 0xFFFFFFFF);
-            graphics.fill(birdDrawX + BIRD_SIZE - 2, birdDrawY + 3, birdDrawX + BIRD_SIZE - 1, birdDrawY + 5, 0xFF000000);
-            // 嘴巴
-            graphics.fill(birdDrawX + 2, birdDrawY + 8, birdDrawX + BIRD_SIZE + 2, birdDrawY + BIRD_SIZE - 2, 0xFFE36D36);
+            // 黄色小鸟
+            FLAPPY_BIRD.draw(graphics, 0, 0, birdDrawX, birdDrawY, BIRD_SIZE, BIRD_SIZE, 0);
 
             // 3. 游戏结束
             if (gameOver) {

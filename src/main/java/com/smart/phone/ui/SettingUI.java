@@ -24,7 +24,7 @@ public class SettingUI extends UIElement {
         }).style(style -> style.backgroundTexture(Sprites.RECT_SOLID));
 
         ScrollerView scrollerView = new ScrollerView();
-        scrollerView.viewContainer.layout(layout -> layout.setAlignItems(YogaAlign.CENTER).setHeightPercent(100).setJustifyContent(YogaJustify.FLEX_START).setAlignItems(YogaAlign.CENTER));
+        scrollerView.viewContainer.layout(layout -> layout.setAlignItems(YogaAlign.CENTER).setJustifyContent(YogaJustify.FLEX_START));
         scrollerView.viewPort.getStyle().backgroundTexture(IGuiTexture.EMPTY);
         scrollerView.scrollerStyle(style -> {
             style.verticalScrollDisplay(ScrollDisplay.NEVER);
@@ -47,7 +47,7 @@ public class SettingUI extends UIElement {
             SmartPhoneClientUtil.setPhoneInfoByPlayer(phoneInfo);
         });
 
-        scrollerView.viewContainer.addChildren(title, group);
+        scrollerView.addScrollViewChildren(title, group);
         this.addChildren(scrollerView);
     }
 }
