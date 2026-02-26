@@ -11,8 +11,8 @@ public class PlayerHeadElement extends UIElement {
     public PlayerHeadElement(float size) {
         super();
         layout(layout -> {
-            layout.setWidth(size);
-            layout.setHeight(size);
+            layout.width(size);
+            layout.height(size);
         });
     }
 

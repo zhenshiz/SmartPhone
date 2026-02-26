@@ -12,11 +12,14 @@ import com.lowdragmc.lowdraglib2.gui.ui.style.PropertyRegistry;
 import com.lowdragmc.lowdraglib2.math.interpolate.Eases;
 import com.smart.phone.SmartPhone;
 import com.smart.phone.ui.PhoneUI;
+import dev.vfyjxf.taffy.style.AlignContent;
+import dev.vfyjxf.taffy.style.AlignItems;
+import dev.vfyjxf.taffy.style.FlexDirection;
+import dev.vfyjxf.taffy.style.TaffyPosition;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
-import org.appliedenergistics.yoga.*;
 
 // 解锁窗口
 @Getter
@@ -38,13 +41,13 @@ public class LockScreen extends UIElement {
         if (player == null) return;
 
         this.layout(layout -> {
-            layout.setPositionType(YogaPositionType.ABSOLUTE);
-            layout.setWidthPercent(100);
-            layout.setHeightPercent(100);
-            layout.setFlexDirection(YogaFlexDirection.COLUMN);
-            layout.setAlignItems(YogaAlign.CENTER);
-            layout.setJustifyContent(YogaJustify.SPACE_BETWEEN);
-            layout.setPadding(YogaEdge.VERTICAL, 20);
+            layout.positionType(TaffyPosition.ABSOLUTE);
+            layout.widthPercent(100);
+            layout.heightPercent(100);
+            layout.flexDirection(FlexDirection.COLUMN);
+            layout.alignItems(AlignItems.CENTER);
+            layout.justifyContent(AlignContent.SPACE_BETWEEN);
+            layout.paddingVertical(20);
         }).style(style -> {
             style.zIndex(10);
         }).addEventListener(UIEvents.TICK, event -> {
@@ -52,8 +55,8 @@ public class LockScreen extends UIElement {
         });
 
         UIElement topSection = new UIElement().layout(l -> {
-            l.setFlexDirection(YogaFlexDirection.COLUMN);
-            l.setAlignItems(YogaAlign.CENTER);
+            l.flexDirection(FlexDirection.COLUMN);
+            l.alignItems(AlignItems.CENTER);
         }).addChildren(new Label().textStyle(textStyle -> {
             textStyle.adaptiveHeight(true);
             textStyle.adaptiveWidth(true);
@@ -72,9 +75,9 @@ public class LockScreen extends UIElement {
         }));
 
         UIElement bottomSection = new UIElement().layout(l -> {
-            l.setFlexDirection(YogaFlexDirection.COLUMN);
-            l.setAlignItems(YogaAlign.CENTER);
-        }).addChildren(new UIElement().layout(layout -> layout.setHeight(12).setWidth(12).setMargin(YogaEdge.BOTTOM, 3)).style(style -> {
+            l.flexDirection(FlexDirection.COLUMN);
+            l.alignItems(AlignItems.CENTER);
+        }).addChildren(new UIElement().layout(layout -> layout.height(12).width(12).marginBottom(3)).style(style -> {
             style.backgroundTexture(UN_LOCK);
         }), new Label().setText("smartPhone.ui.lock.tip").textStyle(textStyle -> {
             textStyle.adaptiveHeight(true);

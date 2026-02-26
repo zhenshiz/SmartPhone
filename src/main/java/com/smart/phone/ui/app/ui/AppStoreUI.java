@@ -6,20 +6,18 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.SearchComponent;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
-import com.lowdragmc.lowdraglib2.gui.ui.styletemplate.Sprites;
 import com.smart.phone.SmartPhoneRegistries;
 import com.smart.phone.ui.app.IApp;
 import com.smart.phone.ui.components.Toast;
 import com.smart.phone.ui.view.HomeScreen;
 import com.smart.phone.util.SmartPhoneClientUtil;
 import com.smart.phone.util.UIElementUtil;
+import dev.vfyjxf.taffy.style.AlignContent;
+import dev.vfyjxf.taffy.style.AlignItems;
+import dev.vfyjxf.taffy.style.FlexDirection;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.network.chat.Component;
-import org.appliedenergistics.yoga.YogaAlign;
-import org.appliedenergistics.yoga.YogaFlexDirection;
-import org.appliedenergistics.yoga.YogaGutter;
-import org.appliedenergistics.yoga.YogaJustify;
 
 import java.util.List;
 import java.util.Set;
@@ -38,8 +36,8 @@ public class AppStoreUI extends AppUI {
         Set<String> names = iApps.stream().map(iApp -> iApp.getDisplayName().getString()).collect(Collectors.toSet());
         searchComponent = UIElementUtil.createStrArrSearchComponentConfigurator("", names, this::getSearch, this::setSearch, 6).searchComponent;
         searchComponent.textField.textFieldStyle(style -> style.fontSize(6).placeholder(Component.translatable("smartPhone.ui.app.appStore.search")));
-        searchComponent.layout(layout -> layout.setWidthPercent(100));
-        appScrollView.viewContainer.layout(layout -> layout.setGap(YogaGutter.ALL, 2));
+        searchComponent.layout(layout -> layout.widthPercent(100));
+        appScrollView.viewContainer.layout(layout -> layout.gapAll(2));
         reloadAppScrollView(iApps);
     }
 
@@ -53,22 +51,36 @@ public class AppStoreUI extends AppUI {
 
     public UIElement createAppCard(IApp iApp) {
         UIElement card = new UIElement().layout(layout -> {
-            layout.setWidthPercent(100);
-            layout.setHeight(30);
-            layout.setFlexDirection(YogaFlexDirection.ROW);
-            layout.setJustifyContent(YogaJustify.CENTER);
-            layout.setAlignItems(YogaAlign.SPACE_BETWEEN);
+            layout.widthPercent(100);
+            layout.height(30);
+            layout.flexDirection(FlexDirection.ROW);
+            // 修正了原来的布局逻辑错误：将元素分布到左右两端，并在垂直方向居中
+            layout.justifyContent(AlignContent.SPACE_BETWEEN);
+            layout.alignItems(AlignItems.CENTER);
         });
-        //左侧
-        UIElement left = new UIElement().layout(layout -> layout.setFlexDirection(YogaFlexDirection.ROW).setWidthPercent(70).setHeightPercent(100).setJustifyContent(YogaJustify.FLEX_START).setAlignItems(YogaAlign.CENTER).setGap(YogaGutter.ALL, 2));
+
+        // 左侧
+        UIElement left = new UIElement().layout(layout -> layout
+                .flexDirection(FlexDirection.ROW)
+                .widthPercent(70)
+                .heightPercent(100)
+                .justifyContent(AlignContent.FLEX_START)
+                .alignItems(AlignItems.CENTER)
+                .gapAll(2)
+        );
+
         UIElement iconBackground = new UIElement().layout(layout -> {
-            layout.setWidth(20).setHeight(20).setJustifyContent(YogaJustify.CENTER).setAlignItems(YogaAlign.CENTER);
+            layout.width(20)
+                    .height(20)
+                    .justifyContent(AlignContent.CENTER)
+                    .alignItems(AlignItems.CENTER);
         }).style(style -> style.backgroundTexture(iApp.getIcon()));
+
         left.addChildren(iconBackground, new UIElement().layout(layout -> {
-            layout.setFlexDirection(YogaFlexDirection.COLUMN);
-            layout.setAlignItems(YogaAlign.FLEX_START);
-            layout.setJustifyContent(YogaJustify.CENTER);
-            layout.setGap(YogaGutter.ALL, 2);
+            layout.flexDirection(FlexDirection.COLUMN);
+            layout.alignItems(AlignItems.FLEX_START);
+            layout.justifyContent(AlignContent.CENTER);
+            layout.gapAll(2);
         }).addChildren(new Label().setText(iApp.getDisplayName()).textStyle(textStyle -> {
             textStyle.adaptiveWidth(true);
             textStyle.adaptiveHeight(true);
@@ -81,8 +93,13 @@ public class AppStoreUI extends AppUI {
             textStyle.textColor(ColorPattern.T_WHITE.color);
         })));
 
-        //右侧
-        UIElement right = new UIElement().layout(layout -> layout.setWidthPercent(30).setHeightPercent(100).setJustifyContent(YogaJustify.CENTER).setAlignItems(YogaAlign.CENTER));
+        // 右侧
+        UIElement right = new UIElement().layout(layout -> layout
+                .widthPercent(30)
+                .heightPercent(100)
+                .justifyContent(AlignContent.CENTER)
+                .alignItems(AlignItems.CENTER)
+        );
 
         Button button = new Button().textStyle(textStyle -> {
             textStyle.fontSize(5);

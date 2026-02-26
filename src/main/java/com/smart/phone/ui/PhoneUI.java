@@ -12,8 +12,11 @@ import com.smart.phone.SmartPhone;
 import com.smart.phone.ui.data.PhoneInfo;
 import com.smart.phone.ui.view.HomeScreen;
 import com.smart.phone.ui.view.LockScreen;
+import dev.vfyjxf.taffy.style.AlignContent;
+import dev.vfyjxf.taffy.style.AlignItems;
+import dev.vfyjxf.taffy.style.FlexDirection;
+import dev.vfyjxf.taffy.style.TaffyPosition;
 import net.minecraft.network.chat.Component;
-import org.appliedenergistics.yoga.*;
 
 public class PhoneUI extends UIElement {
     public final UIElement screenContainer;
@@ -31,12 +34,12 @@ public class PhoneUI extends UIElement {
         this.lockScreen = new LockScreen(this);
 
         this.layout(layout -> {
-            layout.setMargin(YogaEdge.LEFT, Config.PHONE_MARGIN_LEFT.get().floatValue());
-            layout.setMargin(YogaEdge.TOP, Config.PHONE_MARGIN_TOP.get().floatValue());
-            layout.setWidthPercent(80);
-            layout.setHeightPercent(80);
-            layout.setJustifyContent(YogaJustify.CENTER);
-            layout.setAlignItems(YogaAlign.CENTER);
+            layout.marginLeft(Config.PHONE_MARGIN_LEFT.get().floatValue());
+            layout.marginTop(Config.PHONE_MARGIN_TOP.get().floatValue());
+            layout.widthPercent(80);
+            layout.heightPercent(80);
+            layout.justifyContent(AlignContent.CENTER);
+            layout.alignItems(AlignItems.CENTER);
         }).style(style -> {
             style.backgroundTexture(BACKGROUND);
         });
@@ -44,20 +47,20 @@ public class PhoneUI extends UIElement {
         addEventListener(UIEvents.TICK, event -> phoneInfo.getIPhoneTimeSource().tick());
 
         UIElement topContainer = new UIElement().layout(layout -> {
-            layout.setPositionType(YogaPositionType.ABSOLUTE);
-            layout.setFlexDirection(YogaFlexDirection.ROW);
-            layout.setAlignItems(YogaAlign.CENTER);
-            layout.setJustifyContent(YogaJustify.SPACE_BETWEEN);
+            layout.positionType(TaffyPosition.ABSOLUTE);
+            layout.flexDirection(FlexDirection.ROW);
+            layout.alignItems(AlignItems.CENTER);
+            layout.justifyContent(AlignContent.SPACE_BETWEEN);
             layout.top(0);
             layout.left(0);
-            layout.setWidthPercent(100);
-            layout.setHeight(8);
-            layout.setPadding(YogaEdge.HORIZONTAL, 2);
+            layout.widthPercent(100);
+            layout.height(8);
+            layout.paddingHorizontal(2);
         }).style(style -> style.zIndex(20)).addEventListener(UIEvents.TICK, event -> {
             event.target.getStyle().backgroundTexture(homeScreen.appUI == null ? IGuiTexture.EMPTY : new ColorRectTexture(ColorPattern.BLACK.color));
         });
 
-        UIElement left = new UIElement().layout(layout -> layout.setFlex(1)).addChildren(new Label().textStyle(textStyle -> {
+        UIElement left = new UIElement().layout(layout -> layout.flex(1)).addChildren(new Label().textStyle(textStyle -> {
             textStyle.fontSize(5);
             textStyle.adaptiveHeight(true);
         }).addEventListener(UIEvents.TICK, event -> {
@@ -67,26 +70,29 @@ public class PhoneUI extends UIElement {
                     phoneInfo.getIPhoneTimeSource().getMinute()
             ));
         }));
-        UIElement center = new UIElement().layout(layout -> layout.setFlex(1).setJustifyContent(YogaJustify.CENTER).setAlignItems(YogaAlign.CENTER)).addChildren(new Label().textStyle(textStyle -> textStyle.fontSize(5).adaptiveWidth(true).adaptiveHeight(true)).addEventListener(UIEvents.TICK, event -> {
+
+        UIElement center = new UIElement().layout(layout -> layout.flex(1).justifyContent(AlignContent.CENTER).alignItems(AlignItems.CENTER)).addChildren(new Label().textStyle(textStyle -> textStyle.fontSize(5).adaptiveWidth(true).adaptiveHeight(true)).addEventListener(UIEvents.TICK, event -> {
             ((Label) event.target).setText(homeScreen.iApp == null ? Component.empty() : homeScreen.iApp.getDisplayName());
         }));
-        UIElement right = new UIElement().layout(layout -> layout.setFlex(1).setAlignItems(YogaAlign.FLEX_END)).addChildren(new UIElement().layout(layout -> {
-            layout.setFlexDirection(YogaFlexDirection.ROW);
-            layout.setAlignItems(YogaAlign.CENTER);
+
+        UIElement right = new UIElement().layout(layout -> layout.flex(1).alignItems(AlignItems.FLEX_END)).addChildren(new UIElement().layout(layout -> {
+            layout.flexDirection(FlexDirection.ROW);
+            layout.alignItems(AlignItems.CENTER);
         }).addChildren(new UIElement().layout(layout -> {
-            layout.setWidth(6);
-            layout.setHeight(4);
+            layout.width(6);
+            layout.height(4);
         }).style(style -> style.backgroundTexture(SIGNAL)), new UIElement().layout(layout -> {
-            layout.setWidth(8);
-            layout.setHeight(8);
+            layout.width(8);
+            layout.height(8);
         }).style(style -> style.backgroundTexture(BATTERY))));
+
         topContainer.addChildren(left, center, right);
 
         screenContainer = new UIElement().layout(layout -> {
-            layout.setWidthPercent(23.4f);
-            layout.setHeightPercent(78.6f);
+            layout.widthPercent(23.4f);
+            layout.heightPercent(78.6f);
         }).style(style -> {
-            style.holder.setOverflow(YogaOverflow.HIDDEN);
+            style.holder.setOverflowVisible(false);
         }).addChildren(homeScreen, lockScreen, topContainer);
 
         this.addChildren(screenContainer);

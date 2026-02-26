@@ -11,11 +11,10 @@ import com.smart.phone.ui.app.ui.game.Direction;
 import com.smart.phone.ui.app.ui.game.Point;
 import com.smart.phone.ui.view.HomeScreen;
 import com.smart.phone.util.UIElementUtil;
+import dev.vfyjxf.taffy.style.AlignContent;
+import dev.vfyjxf.taffy.style.AlignItems;
+import dev.vfyjxf.taffy.style.TaffyPosition;
 import net.minecraft.network.chat.Component;
-import org.appliedenergistics.yoga.YogaAlign;
-import org.appliedenergistics.yoga.YogaEdge;
-import org.appliedenergistics.yoga.YogaJustify;
-import org.appliedenergistics.yoga.YogaPositionType;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -85,13 +84,13 @@ public class SnakeGameUI extends AppUI {
 
         // 创建开始按钮
         startButton = (Button) new Button().setText("smartPhone.ui.app.game.startGame").textStyle(textStyle -> textStyle.fontSize(6)).layout(layout -> {
-            layout.setPositionType(YogaPositionType.ABSOLUTE);
+            layout.positionType(TaffyPosition.ABSOLUTE);
             layout.top(3);
         }).addEventListener(UIEvents.CLICK, event -> startGame());
 
         // 创建重新开始按钮
         restartButton = (Button) new Button().setText("smartPhone.ui.app.game.resetGame").textStyle(textStyle -> textStyle.fontSize(6)).layout(layout -> {
-            layout.setPositionType(YogaPositionType.ABSOLUTE);
+            layout.positionType(TaffyPosition.ABSOLUTE);
             layout.top(3);
         }).addEventListener(UIEvents.CLICK, event -> startGame());
 
@@ -106,10 +105,10 @@ public class SnakeGameUI extends AppUI {
         // 分数显示区域
         UIElement scoreContainer = new UIElement()
                 .layout(layout -> {
-                    layout.setWidthPercent(100);
-                    layout.setHeight(6);
-                    layout.setJustifyContent(YogaJustify.CENTER);
-                    layout.setAlignItems(YogaAlign.CENTER);
+                    layout.widthPercent(100);
+                    layout.height(6);
+                    layout.justifyContent(AlignContent.CENTER);
+                    layout.alignItems(AlignItems.CENTER);
                 });
 
         scoreContainer.addChildren(scoreLabel);
@@ -117,11 +116,11 @@ public class SnakeGameUI extends AppUI {
         // 游戏画布容器
         UIElement canvasContainer = new UIElement()
                 .layout(layout -> {
-                    layout.setWidthPercent(100);
-                    layout.setHeight(GAME_HEIGHT * GRID_SIZE);
-                    layout.setJustifyContent(YogaJustify.CENTER);
-                    layout.setAlignItems(YogaAlign.CENTER);
-                    layout.setMargin(YogaEdge.VERTICAL, 3);
+                    layout.widthPercent(100);
+                    layout.height(GAME_HEIGHT * GRID_SIZE);
+                    layout.justifyContent(AlignContent.CENTER);
+                    layout.alignItems(AlignItems.CENTER);
+                    layout.marginVertical(3);
                 });
 
         canvasContainer.addChildren(gameCanvas);
@@ -132,10 +131,10 @@ public class SnakeGameUI extends AppUI {
         // 开始/重新开始按钮
         UIElement buttonContainer = new UIElement()
                 .layout(layout -> {
-                    layout.setWidthPercent(100);
-                    layout.setHeight(10);
-                    layout.setJustifyContent(YogaJustify.CENTER);
-                    layout.setAlignItems(YogaAlign.CENTER);
+                    layout.widthPercent(100);
+                    layout.height(10);
+                    layout.justifyContent(AlignContent.CENTER);
+                    layout.alignItems(AlignItems.CENTER);
                 });
 
         buttonContainer.addChildren(startButton, restartButton);
@@ -277,8 +276,8 @@ public class SnakeGameUI extends AppUI {
 
         public GameCanvas() {
             this.layout(layout -> {
-                layout.setWidth(GAME_WIDTH * GRID_SIZE);
-                layout.setHeight(GAME_HEIGHT * GRID_SIZE);
+                layout.width(GAME_WIDTH * GRID_SIZE);
+                layout.height(GAME_HEIGHT * GRID_SIZE);
             }).style(style -> style.backgroundTexture(new ColorRectTexture(ColorPattern.T_BLACK.color)));
         }
 

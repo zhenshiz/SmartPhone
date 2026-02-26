@@ -11,12 +11,11 @@ import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 import com.smart.phone.SmartPhone;
 import com.smart.phone.ui.view.HomeScreen;
+import dev.vfyjxf.taffy.style.AlignContent;
+import dev.vfyjxf.taffy.style.AlignItems;
+import dev.vfyjxf.taffy.style.FlexDirection;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import org.appliedenergistics.yoga.YogaAlign;
-import org.appliedenergistics.yoga.YogaEdge;
-import org.appliedenergistics.yoga.YogaFlexDirection;
-import org.appliedenergistics.yoga.YogaJustify;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Random;
@@ -54,7 +53,7 @@ public class MinesweeperUI extends AppUI {
     private final Label infoLabel;
     private final Button restartButton;
     private final IGuiTexture BANNER = SpriteTexture.of(SmartPhone.formattedMod("textures/ui/banner.png"));
-    private final IGuiTexture MINESWEEPER = SpriteTexture.of(SmartPhone.formattedMod("textures/ui/app/minesweeper.png"));
+    private final IGuiTexture MINESWEEPER = SpriteTexture.of(SmartPhone.formattedMod("textures/ui/mine.png"));
 
     // 格子数据结构
     private static class Cell {
@@ -109,32 +108,32 @@ public class MinesweeperUI extends AppUI {
     private void buildUI() {
         // 布局容器
         UIElement root = new UIElement().layout(l -> {
-            l.setWidthPercent(100);
-            l.setFlexDirection(YogaFlexDirection.COLUMN);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.FLEX_START);
+            l.widthPercent(100);
+            l.flexDirection(FlexDirection.COLUMN);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.FLEX_START);
         });
 
         // 顶部信息栏
         UIElement header = new UIElement().layout(l -> {
-            l.setMargin(YogaEdge.VERTICAL, 2);
-            l.setAlignItems(YogaAlign.CENTER);
+            l.marginVertical(2);
+            l.alignItems(AlignItems.CENTER);
         });
         header.addChildren(infoLabel);
 
         // 游戏区域
         UIElement boardContainer = new UIElement().layout(l -> {
-            l.setWidth(BOARD_WIDTH);
-            l.setHeight(BOARD_HEIGHT);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.CENTER);
+            l.width(BOARD_WIDTH);
+            l.height(BOARD_HEIGHT);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.CENTER);
         });
         boardContainer.addChildren(gameCanvas);
 
         // 底部按钮
         UIElement footer = new UIElement().layout(l -> {
-            l.setMargin(YogaEdge.TOP, 10);
-            l.setHeight(20);
+            l.marginTop(10);
+            l.height(20);
         });
         footer.addChildren(restartButton);
 
@@ -287,8 +286,8 @@ public class MinesweeperUI extends AppUI {
     private class MineCanvas extends UIElement {
         public MineCanvas() {
             this.layout(l -> {
-                l.setWidth(BOARD_WIDTH);
-                l.setHeight(BOARD_HEIGHT);
+                l.width(BOARD_WIDTH);
+                l.height(BOARD_HEIGHT);
             });
             // 棋盘背景色
             this.style(s -> s.backgroundTexture(new ColorRectTexture(0xFF888888)));

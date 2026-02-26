@@ -32,10 +32,7 @@ repositories {
     }
 
     // LDLib2
-    maven {
-        name = "Jared's maven"
-        url = "https://maven.firstdarkdev.xyz/snapshots"
-    }
+    maven { url = "https://maven.firstdark.dev/snapshots" }
 
     //GeckoLib
     maven {
@@ -145,8 +142,7 @@ modAccessor {
 dependencies {
     //前置模组
     // LDLib2
-    implementation("com.lowdragmc.ldlib2:ldlib2-neoforge-${minecraft_version}:${ldlib2_version}:all") { transitive = false }
-    implementation "org.appliedenergistics.yoga:yoga:1.0.0"
+    implementation("com.lowdragmc.ldlib2:ldlib2-neoforge-${minecraft_version}:${ldlib2_version}:all")
 
     //联动模组
     // KubeJS

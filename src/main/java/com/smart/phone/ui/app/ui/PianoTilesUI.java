@@ -9,8 +9,11 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 import com.smart.phone.ui.view.HomeScreen;
+import dev.vfyjxf.taffy.style.AlignContent;
+import dev.vfyjxf.taffy.style.AlignItems;
+import dev.vfyjxf.taffy.style.FlexDirection;
 import net.minecraft.network.chat.Component;
-import org.appliedenergistics.yoga.*;
+import org.appliedenergistics.yoga.YogaOverflow;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedList;
@@ -70,7 +73,7 @@ public class PianoTilesUI extends AppUI {
     public PianoTilesUI(HomeScreen homeScreen) {
         super(homeScreen);
         // 去掉默认 Padding，由我们自己控制布局
-        this.layout(layout -> layout.setPadding(YogaEdge.ALL, 0));
+        this.layout(layout -> layout.paddingAll(0));
 
         // 初始化 UI
         infoLabel = new Label();
@@ -102,26 +105,26 @@ public class PianoTilesUI extends AppUI {
 
     private void buildUI() {
         UIElement root = new UIElement().layout(l -> {
-            l.setWidthPercent(100);
-            l.setFlexDirection(YogaFlexDirection.COLUMN);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.FLEX_START);
+            l.widthPercent(100);
+            l.flexDirection(FlexDirection.COLUMN);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.FLEX_START);
         });
 
         UIElement header = new UIElement().layout(l -> {
-            l.setWidthPercent(100);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.CENTER);
-            l.setMargin(YogaEdge.BOTTOM, 2);
+            l.widthPercent(100);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.CENTER);
+            l.marginBottom(2);
         });
         header.addChildren(infoLabel);
 
         // 2. 游戏区域
         UIElement canvasContainer = new UIElement().layout(l -> {
-            l.setWidth(GAME_WIDTH);
-            l.setHeight(GAME_HEIGHT);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.CENTER);
+            l.width(GAME_WIDTH);
+            l.height(GAME_HEIGHT);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.CENTER);
             l.overflow(YogaOverflow.HIDDEN);
         });
         // 加个黑边框，看起来像个游戏机
@@ -130,11 +133,11 @@ public class PianoTilesUI extends AppUI {
 
         // 3. 底部按钮区域
         UIElement footer = new UIElement().layout(l -> {
-            l.setWidthPercent(100);
-            l.setHeight(20);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.CENTER);
-            l.setMargin(YogaEdge.TOP, 5);
+            l.widthPercent(100);
+            l.height(20);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.CENTER);
+            l.marginTop(5);
         });
         footer.addChildren(restartButton);
 
@@ -254,8 +257,8 @@ public class PianoTilesUI extends AppUI {
     private class GameCanvas extends UIElement {
         public GameCanvas() {
             this.layout(l -> {
-                l.setWidth(GAME_WIDTH);
-                l.setHeight(GAME_HEIGHT);
+                l.width(GAME_WIDTH);
+                l.height(GAME_HEIGHT);
             });
             this.style(s -> s.backgroundTexture(new ColorRectTexture(COL_WHITE)));
         }

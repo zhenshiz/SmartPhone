@@ -17,8 +17,9 @@ public class NotepadUI extends AppUI {
             style.fontSize(6);
             style.placeholder(Component.empty());
         }).layout(layout -> {
-            layout.setWidthPercent(100);
-            layout.setHeightPercent(100);
+            layout.widthPercent(100);
+            layout.flexGrow(1);
+            layout.paddingAll(6);
         });
         textArea.setLines(List.of(homeScreen.getPhoneUI().phoneInfo.getNotepadText()));
 
@@ -26,6 +27,7 @@ public class NotepadUI extends AppUI {
             homeScreen.getPhoneUI().phoneInfo.setNotepadText(lines);
         });
 
-        appScrollView.viewContainer.addChildren(textArea);
+        this.removeChild(appScrollView);
+        this.addChildren(textArea);
     }
 }

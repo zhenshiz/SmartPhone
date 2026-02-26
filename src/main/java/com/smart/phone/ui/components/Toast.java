@@ -1,28 +1,26 @@
 package com.smart.phone.ui.components;
 
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
-import com.lowdragmc.lowdraglib2.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.data.TextWrap;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
-import com.lowdragmc.lowdraglib2.gui.ui.layout.YogaProperties;
+import com.lowdragmc.lowdraglib2.gui.ui.layout.LayoutProperties;
 import com.lowdragmc.lowdraglib2.gui.ui.style.PropertyRegistry;
 import com.lowdragmc.lowdraglib2.gui.ui.styletemplate.Sprites;
+import dev.vfyjxf.taffy.style.AlignItems;
+import dev.vfyjxf.taffy.style.TaffyDimension;
+import dev.vfyjxf.taffy.style.TaffyPosition;
 import net.minecraft.network.chat.Component;
-import org.appliedenergistics.yoga.YogaAlign;
-import org.appliedenergistics.yoga.YogaEdge;
-import org.appliedenergistics.yoga.YogaPositionType;
-import org.appliedenergistics.yoga.style.StyleSizeLength;
 
 public class Toast extends UIElement {
 
     public Toast(Component message, float durationSeconds) {
         this.layout(layout -> {
-            layout.setPositionType(YogaPositionType.ABSOLUTE);
-            layout.setPosition(YogaEdge.TOP, 10);
-            layout.setAlignSelf(YogaAlign.CENTER);
-            layout.setWidthPercent(80);
-            layout.setPadding(YogaEdge.ALL, 5);
+            layout.positionType(TaffyPosition.ABSOLUTE);
+            layout.top(10);
+            layout.alignSelf(AlignItems.CENTER);
+            layout.widthPercent(80);
+            layout.paddingAll(5);
         });
 
         this.style(style -> {
@@ -44,11 +42,11 @@ public class Toast extends UIElement {
         // 进度条
         UIElement progressBar = new UIElement();
         progressBar.layout(layout -> layout
-                .setPositionType(YogaPositionType.ABSOLUTE)
-                .setPosition(YogaEdge.BOTTOM, 0)
-                .setPosition(YogaEdge.LEFT, 0)
-                .setHeight(1)
-                .setWidthPercent(0) // 初始宽度 0
+                .positionType(TaffyPosition.ABSOLUTE)
+                .bottom(0)
+                .left(0)
+                .height(1)
+                .widthPercent(0) // 初始宽度 0
         );
         progressBar.style(style -> style.backgroundTexture(ColorPattern.GREEN.rectTexture()));
         this.addChild(progressBar);
@@ -63,7 +61,7 @@ public class Toast extends UIElement {
         // 进度条动画
         progressBar.animation(anim -> anim
                 .duration(durationSeconds)
-                .style(YogaProperties.WIDTH, StyleSizeLength.percent(100))
+                .style(LayoutProperties.WIDTH, TaffyDimension.percent(1f))
                 .onFinished(target -> startFadeOut(durationSeconds))
                 .start()
         );

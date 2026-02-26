@@ -11,9 +11,12 @@ import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 import com.smart.phone.SmartPhone;
 import com.smart.phone.ui.view.HomeScreen;
+import dev.vfyjxf.taffy.style.AlignContent;
+import dev.vfyjxf.taffy.style.AlignItems;
+import dev.vfyjxf.taffy.style.FlexDirection;
+import dev.vfyjxf.taffy.style.TaffyPosition;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import org.appliedenergistics.yoga.*;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
@@ -98,7 +101,7 @@ public class FlappyBirdUI extends AppUI {
         startButton = (Button) new Button().setText("smartPhone.ui.app.game.startGame")
                 .textStyle(textStyle -> textStyle.fontSize(6))
                 .layout(layout -> {
-                    layout.setPositionType(YogaPositionType.ABSOLUTE);
+                    layout.positionType(TaffyPosition.ABSOLUTE);
                     layout.top(3);
                 }).addEventListener(UIEvents.CLICK, event -> startGame());
 
@@ -106,7 +109,7 @@ public class FlappyBirdUI extends AppUI {
         restartButton = (Button) new Button().setText("smartPhone.ui.app.game.resetGame")
                 .textStyle(textStyle -> textStyle.fontSize(6))
                 .layout(layout -> {
-                    layout.setPositionType(YogaPositionType.ABSOLUTE);
+                    layout.positionType(TaffyPosition.ABSOLUTE);
                     layout.top(3);
                 }).addEventListener(UIEvents.CLICK, event -> startGame());
 
@@ -125,30 +128,30 @@ public class FlappyBirdUI extends AppUI {
     private void buildUI() {
         // 顶部 Header
         UIElement header = new UIElement().layout(l -> {
-            l.setWidthPercent(100);
-            l.setFlexDirection(YogaFlexDirection.COLUMN);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.CENTER);
-            l.setMargin(YogaEdge.VERTICAL, 2);
+            l.widthPercent(100);
+            l.flexDirection(FlexDirection.COLUMN);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.CENTER);
+            l.marginVertical(2);
         });
         header.addChildren(scoreLabel);
 
         // 游戏区域容器
         UIElement canvasContainer = new UIElement().layout(l -> {
-            l.setWidthPercent(100);
-            l.setHeight(GAME_HEIGHT);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.CENTER);
-            l.setMargin(YogaEdge.VERTICAL, 5);
+            l.widthPercent(100);
+            l.height(GAME_HEIGHT);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.CENTER);
+            l.marginVertical(5);
         });
         canvasContainer.addChildren(gameCanvas);
 
         // 按钮容器
         UIElement buttonContainer = new UIElement().layout(l -> {
-            l.setWidthPercent(100);
-            l.setHeight(20);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.CENTER);
+            l.widthPercent(100);
+            l.height(20);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.CENTER);
         });
         buttonContainer.addChildren(startButton, restartButton);
 
@@ -281,8 +284,8 @@ public class FlappyBirdUI extends AppUI {
     private class GameCanvas extends UIElement {
         public GameCanvas() {
             this.layout(l -> {
-                l.setWidth(GAME_WIDTH);
-                l.setHeight(GAME_HEIGHT);
+                l.width(GAME_WIDTH);
+                l.height(GAME_HEIGHT);
             });
             // 天空蓝背景
             this.style(s -> s.backgroundTexture(new ColorRectTexture(0xFF70C5CE)));

@@ -16,10 +16,14 @@ import com.smart.phone.ui.app.IApp;
 import com.smart.phone.ui.components.Toast;
 import com.smart.phone.util.SmartPhoneClientUtil;
 import com.smart.phone.util.UIElementUtil;
+import dev.vfyjxf.taffy.style.AlignContent;
+import dev.vfyjxf.taffy.style.AlignItems;
+import dev.vfyjxf.taffy.style.FlexDirection;
+import dev.vfyjxf.taffy.style.FlexWrap;
+import dev.vfyjxf.taffy.style.TaffyPosition;
 import lombok.Getter;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import org.appliedenergistics.yoga.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +32,7 @@ import java.util.List;
 @Getter
 public class HomeScreen extends UIElement {
     private final PhoneUI phoneUI;
-    public final ScrollerView appScrollView = new  ScrollerView();
+    public final ScrollerView appScrollView = new ScrollerView();
     public final UIElement backButton;
     //当前正在显示的APP
     public UIElement appUI;
@@ -41,9 +45,9 @@ public class HomeScreen extends UIElement {
         this.phoneUI = phoneUI;
 
         this.layout(layout -> {
-            layout.setPositionType(YogaPositionType.ABSOLUTE);
-            layout.setWidthPercent(100);
-            layout.setHeightPercent(100);
+            layout.positionType(TaffyPosition.ABSOLUTE);
+            layout.widthPercent(100);
+            layout.heightPercent(100);
         }).style(style -> {
             style.zIndex(1);
         }).addEventListener(UIEvents.TICK, event -> {
@@ -51,15 +55,15 @@ public class HomeScreen extends UIElement {
         });
 
         backButton = new UIElement().layout(layout -> {
-            layout.setPositionType(YogaPositionType.ABSOLUTE);
-            layout.setJustifyContent(YogaJustify.CENTER);
-            layout.setAlignItems(YogaAlign.CENTER);
-            layout.setWidthPercent(100);
-            layout.setHeight(5);
+            layout.positionType(TaffyPosition.ABSOLUTE);
+            layout.justifyContent(AlignContent.CENTER);
+            layout.alignItems(AlignItems.CENTER);
+            layout.widthPercent(100);
+            layout.height(5);
             layout.bottom(0);
         }).addChildren(new UIElement().layout(layout -> {
-            layout.setHeight(1);
-            layout.setWidthPercent(50);
+            layout.height(1);
+            layout.widthPercent(50);
         }).style(style -> style.backgroundTexture(new ColorRectTexture(ColorPattern.BLACK.color))).addEventListener(UIEvents.CLICK, event -> {
             if (this.appUI != null) {
                 this.iApp.onClose(appUI);
@@ -72,15 +76,15 @@ public class HomeScreen extends UIElement {
         }));
 
         appScrollView.layout(layout -> {
-            layout.setWidthPercent(100);
+            layout.widthPercent(100);
             layout.top(8);
-            layout.setFlex(1);
+            layout.flex(1);
         });
         appScrollView.viewContainer.layout(layout -> {
-            layout.setFlexDirection(YogaFlexDirection.ROW);
-            layout.setWrap(YogaWrap.WRAP);
-            layout.setPadding(YogaEdge.ALL, 1);
-            layout.setGap(YogaGutter.ALL, 3);
+            layout.flexDirection(FlexDirection.ROW);
+            layout.flexWrap(FlexWrap.WRAP);
+            layout.paddingAll(1);
+            layout.gapAll(3);
         });
         appScrollView.viewPort.getStyle().backgroundTexture(IGuiTexture.EMPTY);
         appScrollView.scrollerStyle(style -> {
@@ -97,13 +101,13 @@ public class HomeScreen extends UIElement {
         List<IApp> installedApps = phoneUI.phoneInfo.getInstalledApps();
         for (IApp iApp : installedApps) {
             UIElement appIcon = new UIElement().layout(layout -> {
-                layout.setFlexDirection(YogaFlexDirection.COLUMN);
-                layout.setAlignItems(YogaAlign.CENTER);
-                layout.setWidthPercent(30);
+                layout.flexDirection(FlexDirection.COLUMN);
+                layout.alignItems(AlignItems.CENTER);
+                layout.widthPercent(30);
             });
 
             UIElement iconBackground = new UIElement().layout(layout -> {
-                layout.setWidth(12).setHeight(12).setMargin(YogaEdge.BOTTOM, 2).setJustifyContent(YogaJustify.CENTER).setAlignItems(YogaAlign.CENTER);
+                layout.width(12).height(12).marginBottom(2).justifyContent(AlignContent.CENTER).alignItems(AlignItems.CENTER);
             }).style(style -> style.backgroundTexture(iApp.getIcon()));
 
             iconBackground.addEventListener(UIEvents.MOUSE_DOWN, event -> {

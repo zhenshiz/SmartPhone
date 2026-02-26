@@ -7,17 +7,15 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
-import com.lowdragmc.lowdraglib2.gui.ui.styletemplate.Sprites;
 import com.smart.phone.ui.app.ui.game.Direction;
 import com.smart.phone.ui.app.ui.game.Point;
 import com.smart.phone.ui.view.HomeScreen;
 import com.smart.phone.util.UIElementUtil;
+import dev.vfyjxf.taffy.style.AlignContent;
+import dev.vfyjxf.taffy.style.AlignItems;
+import dev.vfyjxf.taffy.style.FlexDirection;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import org.appliedenergistics.yoga.YogaAlign;
-import org.appliedenergistics.yoga.YogaEdge;
-import org.appliedenergistics.yoga.YogaFlexDirection;
-import org.appliedenergistics.yoga.YogaJustify;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
@@ -94,21 +92,21 @@ public class Game2048UI extends AppUI {
     private void buildUI() {
         // --- 顶部标题栏 ---
         UIElement header = new UIElement().layout(l -> {
-            l.setWidthPercent(100);
-            l.setFlexDirection(YogaFlexDirection.COLUMN);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.CENTER);
-            l.setMargin(YogaEdge.VERTICAL, 2);
+            l.widthPercent(100);
+            l.flexDirection(FlexDirection.COLUMN);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.CENTER);
+            l.marginVertical(2);
         });
 
         header.addChildren(scoreLabel);
 
         // --- 游戏画布容器 ---
         UIElement canvasContainer = new UIElement().layout(l -> {
-            l.setWidthPercent(100);
-            l.setHeight(BOARD_SIZE + 10);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.CENTER);
+            l.widthPercent(100);
+            l.height(BOARD_SIZE + 10);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.CENTER);
         });
         canvasContainer.addChildren(gameCanvas);
 
@@ -122,10 +120,10 @@ public class Game2048UI extends AppUI {
 
         // --- 底部重开按钮 ---
         UIElement footer = new UIElement().layout(l -> {
-            l.setWidthPercent(100);
-            l.setHeight(20);
-            l.setAlignItems(YogaAlign.CENTER);
-            l.setJustifyContent(YogaJustify.CENTER);
+            l.widthPercent(100);
+            l.height(20);
+            l.alignItems(AlignItems.CENTER);
+            l.justifyContent(AlignContent.CENTER);
         });
         footer.addChildren(restartButton);
 
@@ -254,8 +252,8 @@ public class Game2048UI extends AppUI {
     private class GridCanvas extends UIElement {
         public GridCanvas() {
             this.layout(l -> {
-                l.setWidth(BOARD_SIZE);
-                l.setHeight(BOARD_SIZE);
+                l.width(BOARD_SIZE);
+                l.height(BOARD_SIZE);
             });
             this.style(s -> s.backgroundTexture(new ColorRectTexture(0xFFBBADA0)));
         }

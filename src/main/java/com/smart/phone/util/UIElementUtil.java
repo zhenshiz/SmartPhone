@@ -16,7 +16,10 @@ import com.lowdragmc.lowdraglib2.gui.util.TreeNode;
 import com.lowdragmc.lowdraglib2.utils.search.IResultHandler;
 import com.smart.phone.ui.app.ui.game.Direction;
 import com.smart.phone.util.common.BeanUtil;
-import org.appliedenergistics.yoga.*;
+import dev.vfyjxf.taffy.style.AlignContent;
+import dev.vfyjxf.taffy.style.AlignItems;
+import dev.vfyjxf.taffy.style.FlexDirection;
+import dev.vfyjxf.taffy.style.TaffyPosition;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -50,17 +53,17 @@ public class UIElementUtil {
             openMenu(posX, posY, menuBuilder.build(), node -> {
                 if (node == TreeBuilder.Menu.CROSS_LINE) {
                     return new UIElement().layout(layout -> {
-                        layout.setHeight(1);
-                        layout.setMargin(YogaEdge.HORIZONTAL, 3);
+                        layout.height(1);
+                        layout.marginHorizontal(3);
                     }).style(style -> style.backgroundTexture(ColorPattern.GRAY.rectTexture()));
                 }
                 return new UIElement().layout(layout -> {
-                    layout.setHeight(8);
-                    layout.setWidthPercent(100);
-                    layout.setFlexDirection(YogaFlexDirection.ROW);
-                    layout.setAlignItems(YogaAlign.CENTER);
+                    layout.height(8);
+                    layout.widthPercent(100);
+                    layout.flexDirection(FlexDirection.ROW);
+                    layout.alignItems(AlignItems.CENTER);
                 }).addChild(new Label().textStyle(textStyle -> textStyle.textAlignVertical(Vertical.CENTER).textWrap(TextWrap.HOVER_ROLL).fontSize(6))
-                        .setText(node.getB()).layout(layout -> layout.setFlexGrow(1)).setOverflow(YogaOverflow.HIDDEN));
+                        .setText(node.getB()).layout(layout -> layout.flexGrow(1)).setOverflowVisible(false));
             }, parent).setHoverTextureProvider(TreeBuilder.Menu::hoverTextureProvider).setOnNodeClicked(TreeBuilder.Menu::handle);
         }
     }
@@ -68,19 +71,19 @@ public class UIElementUtil {
     public static UIElement createControlButtons(Consumer<Direction> onDirectionClick) {
         UIElement controls = new UIElement()
                 .layout(layout -> {
-                    layout.setWidthPercent(80);
-                    layout.setHeight(30);
-                    layout.setFlexDirection(YogaFlexDirection.COLUMN);
-                    layout.setAlignItems(YogaAlign.CENTER);
+                    layout.widthPercent(80);
+                    layout.height(30);
+                    layout.flexDirection(FlexDirection.COLUMN);
+                    layout.alignItems(AlignItems.CENTER);
                 });
 
         // 上按钮
-        UIElement topButton = new UIElement().layout(layout -> layout.setJustifyContent(YogaJustify.CENTER).setFlexDirection(YogaFlexDirection.ROW).setWidthPercent(100).setHeightPercent(50));
+        UIElement topButton = new UIElement().layout(layout -> layout.justifyContent(AlignContent.CENTER).flexDirection(FlexDirection.ROW).widthPercent(100).heightPercent(50));
         Button upButton = createDirectionButton("W", Direction.UP, onDirectionClick);
         topButton.addChildren(upButton);
 
         // 下按钮
-        UIElement bottomButton = new UIElement().layout(layout -> layout.setJustifyContent(YogaJustify.CENTER).setFlexDirection(YogaFlexDirection.ROW).setWidthPercent(100).setHeightPercent(50));
+        UIElement bottomButton = new UIElement().layout(layout -> layout.justifyContent(AlignContent.CENTER).flexDirection(FlexDirection.ROW).widthPercent(100).heightPercent(50));
         Button leftButton = createDirectionButton("A", Direction.LEFT, onDirectionClick);
         Button downButton = createDirectionButton("S", Direction.DOWN, onDirectionClick);
         Button rightButton = createDirectionButton("D", Direction.RIGHT, onDirectionClick);
@@ -96,8 +99,8 @@ public class UIElementUtil {
         button.setText(text);
         button.textStyle(style -> style.fontSize(6));
         button.layout(layout -> {
-            layout.setWidthPercent(30);
-            layout.setHeightPercent(100);
+            layout.widthPercent(30);
+            layout.heightPercent(100);
         });
         button.style(style -> style.backgroundTexture(new ColorRectTexture(ColorPattern.T_GRAY.color)));
         button.addEventListener(UIEvents.CLICK, event -> onDirectionClick.accept(dir));
@@ -111,11 +114,11 @@ public class UIElementUtil {
         float relativeY = posY - parent.getContentY();
 
         menu.layout((layout) -> {
-            layout.setMinWidth(40);
+            layout.minWidth(40);
 
-            layout.setPositionType(YogaPositionType.ABSOLUTE);
-            layout.setPosition(YogaEdge.LEFT, relativeX);
-            layout.setPosition(YogaEdge.TOP, relativeY);
+            layout.positionType(TaffyPosition.ABSOLUTE);
+            layout.left(relativeX);
+            layout.top(relativeY);
         });
 
         menu.addEventListener(UIEvents.LAYOUT_CHANGED, event -> {
@@ -154,8 +157,8 @@ public class UIElementUtil {
                 float finalX = newX;
                 float finalY = newY;
                 menu.layout(l -> {
-                    l.setPosition(YogaEdge.LEFT, finalX);
-                    l.setPosition(YogaEdge.TOP, finalY);
+                    l.left(finalX);
+                    l.top(finalY);
                 });
             }
         });
