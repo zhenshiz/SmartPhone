@@ -5,7 +5,6 @@ import com.lowdragmc.lowdraglib2.configurator.ui.Configurator;
 import com.lowdragmc.lowdraglib2.configurator.ui.ConfiguratorGroup;
 import com.lowdragmc.lowdraglib2.configurator.ui.SearchComponentConfigurator;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
-import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.registry.ILDLRegister;
 import com.lowdragmc.lowdraglib2.syncdata.IPersistedSerializable;
 import com.lowdragmc.lowdraglib2.utils.LDLibExtraCodecs;
@@ -16,11 +15,11 @@ import com.smart.phone.SmartPhone;
 import com.smart.phone.SmartPhoneRegistries;
 import com.smart.phone.ui.data.PhoneInfo;
 import com.smart.phone.util.common.BeanUtil;
+import dev.vfyjxf.taffy.style.TaffyDisplay;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import org.appliedenergistics.yoga.YogaDisplay;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -42,7 +41,7 @@ public abstract class IPhoneTimeSource implements ILDLRegister<IPhoneTimeSource,
         ConfiguratorGroup group = new ConfiguratorGroup();
         group.setCanCollapse(false);
         group.setCollapse(false);
-        group.lineContainer.setDisplay(YogaDisplay.NONE);
+        group.lineContainer.setDisplay(TaffyDisplay.NONE);
 
         Set<IPhoneTimeSource> types = new HashSet<>();
         SmartPhoneRegistries.PHONE_TIME_SOURCE.forEach(iPhoneTimeSource -> types.add(iPhoneTimeSource.value().get()));
@@ -50,10 +49,14 @@ public abstract class IPhoneTimeSource implements ILDLRegister<IPhoneTimeSource,
         configuratorGroup.setCollapse(false);
         configuratorGroup.setCanCollapse(false);
         configuratorGroup.setCollapse(false);
-        configuratorGroup.lineContainer.setDisplay(YogaDisplay.NONE);
+        configuratorGroup.lineContainer.setDisplay(TaffyDisplay.NONE);
         SearchComponentConfigurator<IPhoneTimeSource> typeConfigurator = new SearchComponentConfigurator<>("smartPhone.data.phoneTimeSource.customTimeSource.segments",
                 phoneInfo::getIPhoneTimeSource,
-                phoneInfo::setIPhoneTimeSource,
+                phoneTimeSource -> {
+                    phoneInfo.setIPhoneTimeSource(phoneTimeSource);
+                    configuratorGroup.removeAllConfigurators();
+                    configuratorGroup.addConfigurators(phoneInfo.getIPhoneTimeSource().createDirectConfigurator());
+                },
                 BeanUtil.getValueOrDefault(phoneInfo.getIPhoneTimeSource(), new RealTimeSource()),
                 false,
                 (word, searchHandler) -> {
@@ -69,10 +72,6 @@ public abstract class IPhoneTimeSource implements ILDLRegister<IPhoneTimeSource,
                 (value) -> Component.translatable(value.getDisplayName()).getString(),
                 value -> new Label().setText(Component.translatable(value.getDisplayName())).textStyle(textStyle -> textStyle.fontSize(6).adaptiveHeight(true))
         );
-        typeConfigurator.searchComponent.addEventListener(UIEvents.LAYOUT_CHANGED, event -> {
-            configuratorGroup.removeAllConfigurators();
-            configuratorGroup.addConfigurators(phoneInfo.getIPhoneTimeSource().createDirectConfigurator());
-        });
         group.addConfigurators(typeConfigurator, configuratorGroup);
         return group;
     }

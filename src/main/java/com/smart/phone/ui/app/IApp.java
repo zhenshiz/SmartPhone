@@ -9,6 +9,8 @@ import com.lowdragmc.lowdraglib2.utils.PersistedParser;
 import com.mojang.serialization.Codec;
 import com.smart.phone.SmartPhone;
 import com.smart.phone.SmartPhoneRegistries;
+import com.smart.phone.ui.data.IPhoneInfoData;
+import com.smart.phone.ui.data.PhoneInfo;
 import com.smart.phone.ui.view.HomeScreen;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.chat.Component;
@@ -64,5 +66,10 @@ public abstract class IApp implements ILDLRegister<IApp, Supplier<IApp>>, IPersi
 
     // 关闭应用时调用
     public void onClose(UIElement appUI) {
+    }
+
+    // 获取该App的数据类型
+    public Class<? extends IPhoneInfoData> getDataType() {
+        return null;
     }
 }

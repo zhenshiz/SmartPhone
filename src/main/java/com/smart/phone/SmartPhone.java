@@ -6,8 +6,11 @@ import com.lowdragmc.lowdraglib2.syncdata.AccessorRegistries;
 import com.lowdragmc.lowdraglib2.syncdata.accessor.direct.CustomDirectAccessor;
 import com.mojang.logging.LogUtils;
 import com.smart.phone.command.ICommand;
+import com.smart.phone.ui.app.IApp;
+import com.smart.phone.ui.data.IPhoneInfoData;
 import com.smart.phone.ui.data.PhoneInfo;
 import com.smart.phone.ui.data.PhoneSavedData;
+import com.smart.phone.ui.time.IPhoneTimeSource;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
@@ -42,6 +45,24 @@ public class SmartPhone {
         AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(PhoneInfo.class)
                 .codec(PhoneInfo.CODEC)
                 .streamCodec(PhoneInfo.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(IPhoneTimeSource.class)
+                .codec(IPhoneTimeSource.CODEC)
+                .streamCodec(IPhoneTimeSource.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(IApp.class)
+                .codec(IApp.CODEC)
+                .streamCodec(IApp.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(IPhoneInfoData.class)
+                .codec(IPhoneInfoData.CODEC)
+                .streamCodec(IPhoneInfoData.STREAM_CODEC)
                 .codecMark()
                 .build()
         );

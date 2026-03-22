@@ -6,6 +6,8 @@ import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
 import com.smart.phone.SmartPhone;
 import com.smart.phone.ui.app.ui.NotepadUI;
+import com.smart.phone.ui.data.IPhoneInfoData;
+import com.smart.phone.ui.data.NotepadData;
 import com.smart.phone.ui.view.HomeScreen;
 import net.minecraft.network.chat.Component;
 
@@ -41,5 +43,10 @@ public class Notepad extends IApp {
     @Override
     public boolean isUninstall() {
         return false;
+    }
+
+    @Override
+    public Class<? extends IPhoneInfoData> getDataType() {
+        return NotepadData.class;
     }
 }

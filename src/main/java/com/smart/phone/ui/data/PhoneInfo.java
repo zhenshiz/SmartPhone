@@ -27,6 +27,7 @@ import net.neoforged.neoforge.common.NeoForge;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Data
 public class PhoneInfo implements IConfigurable, IPersistedSerializable {
@@ -37,14 +38,12 @@ public class PhoneInfo implements IConfigurable, IPersistedSerializable {
     @Configurable(name = "smartPhone.data.phoneInfo.phoneWallpaper")
     private ResourceLocation phoneWallpaper = SmartPhone.id("textures/ui/default_wallpaper.png");
     @Persisted
-    @ReadOnlyManaged(serializeMethod = "writePhoneTimeSource", deserializeMethod = "readPhoneTimeSource")
     private IPhoneTimeSource iPhoneTimeSource = new RealTimeSource();
-    @Persisted
-    @ReadOnlyManaged(serializeMethod = "writeInstalledApps", deserializeMethod = "readInstalledApps")
-    private List<IApp> installedApps = new ArrayList<>();
     //ui state
     @Persisted
-    private String[] notepadText = new String[]{""};
+    private List<IApp> installedApps = new ArrayList<>();
+    @Persisted
+    private List<IPhoneInfoData> extensionData = new ArrayList<>();
 
     @Override
     public void buildConfigurator(ConfiguratorGroup father) {
@@ -53,37 +52,41 @@ public class PhoneInfo implements IConfigurable, IPersistedSerializable {
         father.addConfigurator(iPhoneTimeSourceConfigurator);
     }
 
-    private CompoundTag writePhoneTimeSource(IPhoneTimeSource value) {
-        return (CompoundTag) IPhoneTimeSource.CODEC.encodeStart(Platform.getFrozenRegistry().createSerializationContext(NbtOps.INSTANCE), value).result().orElse(new CompoundTag());
+    public <T extends IPhoneInfoData> Optional<T> findExtensionData(Class<T> type) {
+        for (IPhoneInfoData data : extensionData) {
+            if (type.isInstance(data)) {
+                return Optional.of(type.cast(data));
+            }
+        }
+        return Optional.empty();
     }
 
-    private IPhoneTimeSource readPhoneTimeSource(CompoundTag tag) {
-        return IPhoneTimeSource.CODEC.decode(Platform.getFrozenRegistry().createSerializationContext(NbtOps.INSTANCE), tag).getOrThrow().getFirst();
-    }
-
-    private CompoundTag writeInstalledApps(List<IApp> value) {
-        CompoundTag rootTag = new CompoundTag();
-        Codec<List<IApp>> listCodec = IApp.CODEC.listOf();
-        listCodec.encodeStart(NbtOps.INSTANCE, value)
-                .resultOrPartial(SmartPhone.LOGGER::error)
-                .ifPresent(tag -> {
-                    rootTag.put("apps", tag);
-                });
-        return rootTag;
-    }
-
-    private List<IApp> readInstalledApps(CompoundTag tag) {
-        if (tag == null || !tag.contains("apps")) {
-            return new ArrayList<>();
+    public <T extends IPhoneInfoData> T getOrCreateExtensionData(Class<T> type) {
+        Optional<T> existing = findExtensionData(type);
+        if (existing.isPresent()) {
+            return existing.get();
         }
 
-        Codec<List<IApp>> listCodec = IApp.CODEC.listOf();
+        IPhoneInfoData created = createExtensionDataInstance(type);
+        if (created == null) {
+            throw new IllegalArgumentException("Unregistered phone info data type: " + type.getName());
+        }
+        if (!type.isInstance(created)) {
+            throw new IllegalArgumentException("Phone info data type mismatch: " + created.getClass().getName() + " != " + type.getName());
+        }
 
-        List<IApp> immutableList = listCodec.parse(NbtOps.INSTANCE, tag.get("apps"))
-                .resultOrPartial(SmartPhone.LOGGER::error)
-                .orElseGet(ArrayList::new);
+        extensionData.add(created);
+        return type.cast(created);
+    }
 
-        return new ArrayList<>(immutableList);
+    private IPhoneInfoData createExtensionDataInstance(Class<?> type) {
+        for (var holder : SmartPhoneRegistries.PHONE_INFO_DATA) {
+            IPhoneInfoData data = holder.value().get();
+            if (type.isInstance(data)) {
+                return data;
+            }
+        }
+        return null;
     }
 
     {
@@ -91,6 +94,12 @@ public class PhoneInfo implements IConfigurable, IPersistedSerializable {
             IApp app = iApp.value().get();
             if (app.isDefaultInstalled()) {
                 installedApps.add(app);
+            }
+        });
+        SmartPhoneRegistries.PHONE_INFO_DATA.forEach(holder -> {
+            IPhoneInfoData data = holder.value().get();
+            if (data.isDefaultCreated() && findExtensionData(data.getClass()).isEmpty()) {
+                extensionData.add(data);
             }
         });
         NeoForge.EVENT_BUS.post(new PhoneInfoInitEvent(this));
