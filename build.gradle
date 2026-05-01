@@ -34,6 +34,9 @@ repositories {
     // LDLib2
     maven { url = "https://maven.firstdark.dev/snapshots" }
 
+    // Simple Voice Chat
+    maven { url = "https://maven.maxhenkel.de/repository/public" }
+
     //GeckoLib
     maven {
         name = 'GeckoLib'
@@ -148,8 +151,11 @@ dependencies {
     // KubeJS
     implementation "dev.latvian.mods:rhino:${rhino_version}"
     implementation "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"
+    // Simple Voice Chat
+    implementation "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}"
 
     //测试用模组
+    runtimeOnly "maven.modrinth:simple-voice-chat:neoforge-${voicechat_version}"
     implementation "maven.modrinth:sodium:${sodium_version}"
     implementation "maven.modrinth:iris:${iris_version}"
     implementation "maven.modrinth:lan-server-properties:${lsp_version}"

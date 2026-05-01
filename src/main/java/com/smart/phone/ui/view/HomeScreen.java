@@ -163,13 +163,7 @@ public class HomeScreen extends UIElement {
                         Toast.show(this, iApp.canOpen().reason(), 3f);
                         return;
                     }
-                    UIElement appUI = iApp.createAppUI(this);
-                    appUI.addChildren(backButton);
-                    this.appUI = appUI;
-                    this.iApp = iApp;
-                    appScrollView.viewContainer.setVisible(false);
-                    this.addChildren(appUI);
-                    iApp.onOpen(appUI);
+                    openApp(iApp);
                 } else if (event.button == 1) {
                     UIElement clickedElement = event.currentElement;
                     float posX = clickedElement.getPositionX();
@@ -186,6 +180,20 @@ public class HomeScreen extends UIElement {
                     new Label().setText(iApp.getDisplayName()).textStyle(textStyle -> textStyle.adaptiveHeight(true).adaptiveWidth(true).fontSize(5)));
             appScrollView.viewContainer.addChildren(appIcon);
         }
+    }
+
+    public void openApp(IApp iApp) {
+        if (this.appUI != null) {
+            this.iApp.onClose(appUI);
+            this.removeChild(appUI);
+        }
+        UIElement appUI = iApp.createAppUI(this);
+        appUI.addChildren(backButton);
+        this.appUI = appUI;
+        this.iApp = iApp;
+        appScrollView.viewContainer.setVisible(false);
+        this.addChildren(appUI);
+        iApp.onOpen(appUI);
     }
 
     private void handleAppUninstall(IApp app) {

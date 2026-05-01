@@ -26,5 +26,12 @@ versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
 
+[[dependencies."${mod_id}"]]
+modId = "voicechat_api"
+type = "required"
+versionRange = "[2.6.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
 [features."${mod_id}"]
 openGLVersion = "[3.2,)"

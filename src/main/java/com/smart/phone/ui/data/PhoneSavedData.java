@@ -26,11 +26,14 @@ public class PhoneSavedData extends SavedData {
         if (phoneInfo == null) {
             phoneInfo = new PhoneInfo();
             setPhoneInfo(player, phoneInfo);
+        } else {
+            phoneInfo.ensureDefaultContent();
         }
         return phoneInfo;
     }
 
     public void setPhoneInfo(ServerPlayer player, PhoneInfo phoneInfo) {
+        phoneInfo.ensureDefaultContent();
         phoneInfoMap.put(player.getUUID(), phoneInfo);
         setDirty();
     }
@@ -46,6 +49,7 @@ public class PhoneSavedData extends SavedData {
             UUID uuid = UUID.fromString(player);
             PhoneInfo phoneInfo = new PhoneInfo();
             phoneInfo.deserializeNBT(provider, nbt.getCompound(player));
+            phoneInfo.ensureDefaultContent();
             phoneSavedData.phoneInfoMap.put(uuid, phoneInfo);
         }
         return phoneSavedData;

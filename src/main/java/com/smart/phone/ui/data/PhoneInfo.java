@@ -89,10 +89,10 @@ public class PhoneInfo implements IConfigurable, IPersistedSerializable {
         return null;
     }
 
-    {
+    public void ensureDefaultContent() {
         SmartPhoneRegistries.APPS.forEach(iApp -> {
             IApp app = iApp.value().get();
-            if (app.isDefaultInstalled()) {
+            if (app.isDefaultInstalled() && installedApps.stream().noneMatch(installedApp -> installedApp.name().equals(app.name()))) {
                 installedApps.add(app);
             }
         });
@@ -102,6 +102,10 @@ public class PhoneInfo implements IConfigurable, IPersistedSerializable {
                 extensionData.add(data);
             }
         });
+    }
+
+    {
+        ensureDefaultContent();
         NeoForge.EVENT_BUS.post(new PhoneInfoInitEvent(this));
     }
 

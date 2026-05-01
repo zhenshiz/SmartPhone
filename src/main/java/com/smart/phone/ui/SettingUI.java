@@ -8,6 +8,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.data.ScrollDisplay;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
 import com.lowdragmc.lowdraglib2.gui.ui.styletemplate.Sprites;
+import com.lowdragmc.lowdraglib2.math.Size;
 import com.smart.phone.ui.data.PhoneInfo;
 import com.smart.phone.util.SmartPhoneClientUtil;
 import dev.vfyjxf.taffy.style.AlignContent;
@@ -48,5 +49,15 @@ public class SettingUI extends UIElement {
 
         scrollerView.addScrollViewChildren(title, group);
         this.addChildren(scrollerView);
+    }
+
+    public static Size getAutoGuiScaledSize(Size screenSize) {
+        return PhoneUiScale.defaultAutoSize(screenSize);
+    }
+
+    @Override
+    public void initScreen(int screenWidth, int screenHeight) {
+        super.initScreen(screenWidth, screenHeight);
+        transform(transform -> transform.pivot(0.5f, 0.5f).scale(PhoneUiScale.autoScaleFactor()));
     }
 }
