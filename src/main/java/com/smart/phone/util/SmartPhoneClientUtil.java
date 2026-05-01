@@ -7,15 +7,21 @@ import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.TextElement;
 import com.lowdragmc.lowdraglib2.integration.kjs.KJSBindings;
 import com.lowdragmc.lowdraglib2.networking.rpc.RPCPacketDistributor;
+import com.smart.phone.client.message.PhoneMessageClientState;
 import com.smart.phone.network.c2s.C2SPayload;
 import com.smart.phone.client.call.PhoneCallClientState;
 import com.smart.phone.ui.PhoneUI;
 import com.smart.phone.ui.SettingUI;
 import com.smart.phone.ui.app.PhoneCall;
+import com.smart.phone.ui.app.ui.OfficialMessagesUI;
+import com.smart.phone.ui.data.OfficialMessage;
+import com.smart.phone.ui.data.OfficialMessagesData;
 import com.smart.phone.ui.data.PhoneInfo;
 import dev.latvian.mods.kubejs.typings.Info;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
 
 import java.util.UUID;
 
@@ -81,6 +87,24 @@ public class SmartPhoneClientUtil {
         PhoneCallClientState.updatePlayerStatuses(encodedStatuses);
     }
 
+    public static void receiveOfficialMessage(OfficialMessage message) {
+        if (message == null) return;
+        PhoneMessageClientState.receive(message);
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_BELL.value(), 1.1f, 0.45f));
+        mergeOfficialMessage(message);
+    }
+
+    private static void mergeOfficialMessage(OfficialMessage message) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!(minecraft.screen instanceof ModularUIScreen screen)) return;
+        if (!(screen.getModularUI().ui.rootElement instanceof PhoneUI phoneUI)) return;
+        phoneUI.phoneInfo.getOrCreateExtensionData(OfficialMessagesData.class).addMessage(message);
+        if (phoneUI.homeScreen.appUI instanceof OfficialMessagesUI officialMessagesUI) {
+            officialMessagesUI.refreshFromData();
+        }
+    }
+
     public static void dialCall(UUID targetUuid) {
         RPCPacketDistributor.rpcToServer(C2SPayload.CALL_DIAL, targetUuid);
     }
@@ -99,5 +123,9 @@ public class SmartPhoneClientUtil {
 
     public static void requestCallStatus() {
         RPCPacketDistributor.rpcToServer(C2SPayload.CALL_REQUEST_STATUS);
+    }
+
+    public static void markOfficialMessageRead(UUID messageId) {
+        RPCPacketDistributor.rpcToServer(C2SPayload.OFFICIAL_MESSAGE_MARK_READ, messageId);
     }
 }

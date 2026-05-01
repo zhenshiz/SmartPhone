@@ -3,6 +3,7 @@ package com.smart.phone.network.s2c;
 import com.lowdragmc.lowdraglib2.networking.rpc.RPCPacket;
 import com.lowdragmc.lowdraglib2.syncdata.rpc.RPCSender;
 import com.smart.phone.SmartPhone;
+import com.smart.phone.ui.data.OfficialMessage;
 import com.smart.phone.ui.data.PhoneInfo;
 import com.smart.phone.util.SmartPhoneClientUtil;
 
@@ -16,6 +17,7 @@ public class S2CPayload {
     public static final String CALL_ENDED = MOD_ID + "call_ended";
     public static final String CALL_ERROR = MOD_ID + "call_error";
     public static final String CALL_STATUS_UPDATE = MOD_ID + "call_status_update";
+    public static final String OFFICIAL_MESSAGE_RECEIVED = MOD_ID + "official_message_received";
 
     @RPCPacket(OPEN_PHONE)
     public static void openPhone(RPCSender sender, PhoneInfo phoneInfo) {
@@ -55,5 +57,10 @@ public class S2CPayload {
     @RPCPacket(CALL_STATUS_UPDATE)
     public static void callStatusUpdate(RPCSender sender, String encodedStatuses) {
         SmartPhoneClientUtil.callStatusUpdate(encodedStatuses);
+    }
+
+    @RPCPacket(OFFICIAL_MESSAGE_RECEIVED)
+    public static void officialMessageReceived(RPCSender sender, OfficialMessage message) {
+        SmartPhoneClientUtil.receiveOfficialMessage(message);
     }
 }

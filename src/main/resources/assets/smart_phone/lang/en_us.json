@@ -2,6 +2,7 @@
   "command.target.player.only": "The target of this command must be a player",
   "command.target.entity.only": "The target of this command must be an entity",
   "smartPhone.command.reload": "Reloaded phone info cache for %s",
+  "smartPhone.command.message.sent": "Sent official message to %s player(s)",
 
   "itemGroup.smartPhone": "Smartphone",
   "item.smart_phone.phone": "Phone",
@@ -24,6 +25,11 @@
   "smartPhone.ui.homeScreen.uninstall": "Uninstalled %s",
   "smartPhone.ui.homeScreen.not.uninstall": "This app cannot be uninstalled",
   "smartPhone.ui.app.setting": "Settings",
+  "smartPhone.ui.app.officialMessages": "Messages",
+  "smartPhone.ui.app.officialMessages.empty": "No official messages",
+  "smartPhone.ui.app.officialMessages.back": "Back",
+  "smartPhone.ui.app.officialMessages.defaultSender": "Official",
+  "smartPhone.ui.app.officialMessages.untitled": "Untitled message",
   "smartPhone.ui.app.phoneCall": "Phone",
   "smartPhone.ui.app.phoneCall.empty": "No players to call",
   "smartPhone.ui.app.phoneCall.playerId": "ID: %s",
@@ -75,6 +81,8 @@
   "smartPhone.ui.app.game.score": "Score: %s",
 
   "smartPhone.ui.button.delete": "Delete",
+
+  "smartPhone.notification.officialMessage": "New official message",
 
   "smartPhone.toast.app.uninstall": "This app cannot be uninstalled"
 }

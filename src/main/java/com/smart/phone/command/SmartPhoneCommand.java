@@ -1,6 +1,7 @@
 package com.smart.phone.command;
 
 import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.smart.phone.SmartPhone;
@@ -9,8 +10,11 @@ import lombok.SneakyThrows;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+
+import java.util.Collection;
 
 @LDLRegister(name = SmartPhone.MOD_ID, registry = ICommand.COMMAND_ID)
 public class SmartPhoneCommand implements ICommand {
@@ -27,7 +31,28 @@ public class SmartPhoneCommand implements ICommand {
                 .then(Commands.literal("setting")
                         .executes(this::openSetting)
                 )
+                .then(Commands.literal("message")
+                        .then(Commands.literal("send")
+                                .then(Commands.argument("targets", EntityArgument.players())
+                                        .then(Commands.argument("title", StringArgumentType.string())
+                                                .then(Commands.argument("body", StringArgumentType.greedyString())
+                                                        .executes(this::sendOfficialMessage)
+                                                )
+                                        )
+                                )
+                        )
+                )
         );
+    }
+
+    @SneakyThrows
+    private int sendOfficialMessage(CommandContext<CommandSourceStack> context) {
+        Collection<ServerPlayer> players = EntityArgument.getPlayers(context, "targets");
+        String title = StringArgumentType.getString(context, "title");
+        String body = StringArgumentType.getString(context, "body");
+        SmartPhoneServerUtil.sendOfficialMessage(players, title, body);
+        context.getSource().sendSuccess(() -> Component.translatable("smartPhone.command.message.sent", players.size()), true);
+        return players.size();
     }
 
     @SneakyThrows

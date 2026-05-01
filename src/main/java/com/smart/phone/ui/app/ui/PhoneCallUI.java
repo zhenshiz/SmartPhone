@@ -94,7 +94,7 @@ public class PhoneCallUI extends AppUI {
             layout.flexWrap(FlexWrap.NO_WRAP);
             layout.justifyContent(AlignContent.FLEX_START);
             layout.alignItems(AlignItems.CENTER);
-            layout.paddingAll(5);
+            layout.paddingAll(2);
             layout.gapAll(4);
         });
     }

@@ -7,9 +7,6 @@ public final class PhoneUiScale {
     private static final float DEFAULT_SCREEN_WIDTH_RATIO = 0.8f;
     private static final float DEFAULT_SCREEN_HEIGHT_RATIO = 0.8f;
 
-    private PhoneUiScale() {
-    }
-
     public static Size defaultAutoSize(Size screenSize) {
         Minecraft minecraft = Minecraft.getInstance();
         double currentScale = currentGuiScale(minecraft);

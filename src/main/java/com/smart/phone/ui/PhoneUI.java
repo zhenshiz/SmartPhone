@@ -81,6 +81,7 @@ public class PhoneUI extends UIElement {
         UIElement left = new UIElement().layout(layout -> layout.flex(1)).addChildren(timeLabel);
 
         Label titleLabel = new Label();
+        titleLabel.setText(Component.empty());
         titleLabel.layout(layout -> {
             layout.widthPercent(100);
             layout.height(8);

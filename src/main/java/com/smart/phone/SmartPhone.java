@@ -8,6 +8,7 @@ import com.mojang.logging.LogUtils;
 import com.smart.phone.command.ICommand;
 import com.smart.phone.ui.app.IApp;
 import com.smart.phone.ui.data.IPhoneInfoData;
+import com.smart.phone.ui.data.OfficialMessage;
 import com.smart.phone.ui.data.PhoneInfo;
 import com.smart.phone.ui.data.PhoneSavedData;
 import com.smart.phone.ui.time.IPhoneTimeSource;
@@ -45,6 +46,12 @@ public class SmartPhone {
         AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(PhoneInfo.class)
                 .codec(PhoneInfo.CODEC)
                 .streamCodec(PhoneInfo.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(OfficialMessage.class)
+                .codec(OfficialMessage.CODEC)
+                .streamCodec(OfficialMessage.STREAM_CODEC)
                 .codecMark()
                 .build()
         );

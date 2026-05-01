@@ -2,6 +2,7 @@
   "command.target.player.only": "此命令的目标对象应该是玩家",
   "command.target.entity.only": "此命令的目标对象应该是实体",
   "smartPhone.command.reload": "已重载%s的手机信息缓存",
+  "smartPhone.command.message.sent": "已发送官方消息给 %s 名玩家",
 
   "itemGroup.smartPhone": "智能手机",
   "item.smart_phone.phone": "手机",
@@ -24,6 +25,11 @@
   "smartPhone.ui.homeScreen.uninstall": "已卸载 %s",
   "smartPhone.ui.homeScreen.not.uninstall": "该应用无法卸载",
   "smartPhone.ui.app.setting": "设置",
+  "smartPhone.ui.app.officialMessages": "消息",
+  "smartPhone.ui.app.officialMessages.empty": "暂无官方消息",
+  "smartPhone.ui.app.officialMessages.back": "返回",
+  "smartPhone.ui.app.officialMessages.defaultSender": "官方",
+  "smartPhone.ui.app.officialMessages.untitled": "无标题消息",
   "smartPhone.ui.app.phoneCall": "电话",
   "smartPhone.ui.app.phoneCall.empty": "暂无可呼叫玩家",
   "smartPhone.ui.app.phoneCall.playerId": "ID：%s",
@@ -75,6 +81,8 @@
   "smartPhone.ui.app.game.score": "分数：%s",
 
   "smartPhone.ui.button.delete": "删除",
+
+  "smartPhone.notification.officialMessage": "新的官方消息",
 
   "smartPhone.toast.app.uninstall": "该软件无法卸载"
 }

@@ -17,6 +17,7 @@ public class C2SPayload {
     public static final String CALL_REJECT = MOD_ID + "call_reject";
     public static final String CALL_HANGUP = MOD_ID + "call_hangup";
     public static final String CALL_REQUEST_STATUS = MOD_ID + "call_request_status";
+    public static final String OFFICIAL_MESSAGE_MARK_READ = MOD_ID + "official_message_mark_read";
 
     @RPCPacket(SAVE_PHONE_INFO)
     public static void savePhoneInfo(RPCSender sender, PhoneInfo phoneInfo) {
@@ -46,5 +47,10 @@ public class C2SPayload {
     @RPCPacket(CALL_REQUEST_STATUS)
     public static void callRequestStatus(RPCSender sender) {
         CallManager.getInstance().sendStatus(sender.asPlayer());
+    }
+
+    @RPCPacket(OFFICIAL_MESSAGE_MARK_READ)
+    public static void officialMessageMarkRead(RPCSender sender, UUID messageId) {
+        SmartPhoneServerUtil.markOfficialMessageRead(sender.asPlayer(), messageId);
     }
 }
