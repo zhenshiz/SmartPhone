@@ -7,6 +7,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.SearchComponent;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.smart.phone.SmartPhoneRegistries;
+import com.smart.phone.Config;
 import com.smart.phone.ui.app.IApp;
 import com.smart.phone.ui.components.Toast;
 import com.smart.phone.ui.view.HomeScreen;
@@ -32,7 +33,7 @@ public class AppStoreUI extends AppUI {
     public AppStoreUI(HomeScreen homeScreen) {
         super(homeScreen);
 
-        Set<IApp> iApps = SmartPhoneRegistries.filterApp(IApp::isAppStoreInstall);
+        Set<IApp> iApps = SmartPhoneRegistries.filterApp(app -> app.isAppStoreInstall() && Config.isAppEnabled(app.name()));
         Set<String> names = iApps.stream().map(iApp -> iApp.getDisplayName().getString()).collect(Collectors.toSet());
         searchComponent = UIElementUtil.createStrArrSearchComponentConfigurator("", names, this::getSearch, this::setSearch, 6).searchComponent;
         searchComponent.textField.textFieldStyle(style -> style.fontSize(6).placeholder(Component.translatable("smartPhone.ui.app.appStore.search")));

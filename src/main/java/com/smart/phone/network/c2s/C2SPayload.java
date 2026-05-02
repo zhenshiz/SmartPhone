@@ -18,6 +18,16 @@ public class C2SPayload {
     public static final String CALL_HANGUP = MOD_ID + "call_hangup";
     public static final String CALL_REQUEST_STATUS = MOD_ID + "call_request_status";
     public static final String OFFICIAL_MESSAGE_MARK_READ = MOD_ID + "official_message_mark_read";
+    public static final String OFFICIAL_MESSAGE_DELETE = MOD_ID + "official_message_delete";
+    public static final String CHAT_ROOM_REQUEST_LIST = MOD_ID + "chat_room_request_list";
+    public static final String CHAT_ROOM_OPEN = MOD_ID + "chat_room_open";
+    public static final String CHAT_ROOM_SEND = MOD_ID + "chat_room_send";
+    public static final String FRIEND_LIST_REQUEST = MOD_ID + "friend_list_request";
+    public static final String FRIEND_REQUEST = MOD_ID + "friend_request";
+    public static final String FRIEND_ACCEPT = MOD_ID + "friend_accept";
+    public static final String FRIEND_REMOVE = MOD_ID + "friend_remove";
+    public static final String DIRECT_CHAT_OPEN = MOD_ID + "direct_chat_open";
+    public static final String CHAT_ROOM_SEND_IMAGE = MOD_ID + "chat_room_send_image";
 
     @RPCPacket(SAVE_PHONE_INFO)
     public static void savePhoneInfo(RPCSender sender, PhoneInfo phoneInfo) {
@@ -52,5 +62,56 @@ public class C2SPayload {
     @RPCPacket(OFFICIAL_MESSAGE_MARK_READ)
     public static void officialMessageMarkRead(RPCSender sender, UUID messageId) {
         SmartPhoneServerUtil.markOfficialMessageRead(sender.asPlayer(), messageId);
+    }
+
+    @RPCPacket(OFFICIAL_MESSAGE_DELETE)
+    public static void officialMessageDelete(RPCSender sender, UUID messageId) {
+        SmartPhoneServerUtil.deleteOfficialMessage(sender.asPlayer(), messageId);
+    }
+
+    @RPCPacket(CHAT_ROOM_REQUEST_LIST)
+    public static void chatRoomRequestList(RPCSender sender) {
+        SmartPhoneServerUtil.requestChatRooms(sender.asPlayer());
+    }
+
+    @RPCPacket(CHAT_ROOM_OPEN)
+    public static void chatRoomOpen(RPCSender sender, String roomId) {
+        SmartPhoneServerUtil.openChatRoom(sender.asPlayer(), roomId);
+    }
+
+    @RPCPacket(CHAT_ROOM_SEND)
+    public static void chatRoomSend(RPCSender sender, String roomId, String body) {
+        SmartPhoneServerUtil.sendChatRoomMessage(sender.asPlayer(), roomId, body);
+    }
+
+    @RPCPacket(FRIEND_LIST_REQUEST)
+    public static void friendListRequest(RPCSender sender) {
+        SmartPhoneServerUtil.requestFriendList(sender.asPlayer());
+    }
+
+    @RPCPacket(FRIEND_REQUEST)
+    public static void friendRequest(RPCSender sender, UUID targetUuid) {
+        SmartPhoneServerUtil.requestFriend(sender.asPlayer(), targetUuid);
+    }
+
+    @RPCPacket(FRIEND_ACCEPT)
+    public static void friendAccept(RPCSender sender, UUID targetUuid) {
+        SmartPhoneServerUtil.acceptFriend(sender.asPlayer(), targetUuid);
+    }
+
+    @RPCPacket(FRIEND_REMOVE)
+    public static void friendRemove(RPCSender sender, UUID targetUuid) {
+        SmartPhoneServerUtil.removeFriend(sender.asPlayer(), targetUuid);
+    }
+
+    @RPCPacket(DIRECT_CHAT_OPEN)
+    public static void directChatOpen(RPCSender sender, UUID targetUuid) {
+        SmartPhoneServerUtil.openDirectChatRoom(sender.asPlayer(), targetUuid);
+    }
+
+    @RPCPacket(CHAT_ROOM_SEND_IMAGE)
+    public static void chatRoomSendImage(RPCSender sender, String roomId, String imageDataBase64) {
+        byte[] imageData = java.util.Base64.getDecoder().decode(imageDataBase64);
+        SmartPhoneServerUtil.sendChatRoomImage(sender.asPlayer(), roomId, imageData);
     }
 }

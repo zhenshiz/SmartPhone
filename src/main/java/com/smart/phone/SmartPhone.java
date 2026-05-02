@@ -11,6 +11,16 @@ import com.smart.phone.ui.data.IPhoneInfoData;
 import com.smart.phone.ui.data.OfficialMessage;
 import com.smart.phone.ui.data.PhoneInfo;
 import com.smart.phone.ui.data.PhoneSavedData;
+import com.smart.phone.ui.data.chat.ChatRoom;
+import com.smart.phone.ui.data.chat.ChatRoomListSnapshot;
+import com.smart.phone.ui.data.chat.ChatRoomMessage;
+import com.smart.phone.ui.data.chat.ChatRoomSavedData;
+import com.smart.phone.ui.data.chat.ChatRoomSnapshot;
+import com.smart.phone.ui.data.chat.ChatRoomSummary;
+import com.smart.phone.ui.data.social.FriendEntry;
+import com.smart.phone.ui.data.social.FriendListSnapshot;
+import com.smart.phone.ui.data.social.FriendRecord;
+import com.smart.phone.ui.data.social.PhoneSocialSavedData;
 import com.smart.phone.ui.time.IPhoneTimeSource;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,6 +47,12 @@ public class SmartPhone {
     @Setter
     @Getter
     private static PhoneSavedData phoneSavedData;
+    @Setter
+    @Getter
+    private static ChatRoomSavedData chatRoomSavedData;
+    @Setter
+    @Getter
+    private static PhoneSocialSavedData phoneSocialSavedData;
 
     public SmartPhone(IEventBus modEventBus, ModContainer modContainer, Dist dist) {
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
@@ -52,6 +68,54 @@ public class SmartPhone {
         AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(OfficialMessage.class)
                 .codec(OfficialMessage.CODEC)
                 .streamCodec(OfficialMessage.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(ChatRoomMessage.class)
+                .codec(ChatRoomMessage.CODEC)
+                .streamCodec(ChatRoomMessage.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(ChatRoom.class)
+                .codec(ChatRoom.CODEC)
+                .streamCodec(ChatRoom.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(ChatRoomSummary.class)
+                .codec(ChatRoomSummary.CODEC)
+                .streamCodec(ChatRoomSummary.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(ChatRoomListSnapshot.class)
+                .codec(ChatRoomListSnapshot.CODEC)
+                .streamCodec(ChatRoomListSnapshot.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(ChatRoomSnapshot.class)
+                .codec(ChatRoomSnapshot.CODEC)
+                .streamCodec(ChatRoomSnapshot.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(FriendRecord.class)
+                .codec(FriendRecord.CODEC)
+                .streamCodec(FriendRecord.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(FriendEntry.class)
+                .codec(FriendEntry.CODEC)
+                .streamCodec(FriendEntry.STREAM_CODEC)
+                .codecMark()
+                .build()
+        );
+        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(FriendListSnapshot.class)
+                .codec(FriendListSnapshot.CODEC)
+                .streamCodec(FriendListSnapshot.STREAM_CODEC)
                 .codecMark()
                 .build()
         );
@@ -73,8 +137,9 @@ public class SmartPhone {
                 .codecMark()
                 .build()
         );
+
+        modContainer.registerConfig(ModConfig.Type.COMMON, Config.CONFIG_SPEC, "%s_config.toml".formatted(MOD_ID));
         if (dist == Dist.CLIENT) {
-            modContainer.registerConfig(ModConfig.Type.COMMON, Config.CONFIG_SPEC, "%s_config.toml".formatted(MOD_ID));
             modContainer.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
         }
     }

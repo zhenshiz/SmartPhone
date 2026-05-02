@@ -7,16 +7,23 @@ import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.TextElement;
 import com.lowdragmc.lowdraglib2.integration.kjs.KJSBindings;
 import com.lowdragmc.lowdraglib2.networking.rpc.RPCPacketDistributor;
+import com.smart.phone.client.chat.PhoneChatClientState;
 import com.smart.phone.client.message.PhoneMessageClientState;
 import com.smart.phone.network.c2s.C2SPayload;
 import com.smart.phone.client.call.PhoneCallClientState;
 import com.smart.phone.ui.PhoneUI;
 import com.smart.phone.ui.SettingUI;
+import com.smart.phone.ui.app.IApp;
 import com.smart.phone.ui.app.PhoneCall;
+import com.smart.phone.ui.app.ui.ChatRoomUI;
 import com.smart.phone.ui.app.ui.OfficialMessagesUI;
 import com.smart.phone.ui.data.OfficialMessage;
 import com.smart.phone.ui.data.OfficialMessagesData;
 import com.smart.phone.ui.data.PhoneInfo;
+import com.smart.phone.ui.data.chat.ChatRoomListSnapshot;
+import com.smart.phone.ui.data.chat.ChatRoomMessage;
+import com.smart.phone.ui.data.chat.ChatRoomSnapshot;
+import com.smart.phone.ui.data.social.FriendListSnapshot;
 import dev.latvian.mods.kubejs.typings.Info;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -32,6 +39,23 @@ public class SmartPhoneClientUtil {
     public static void openPhone(PhoneInfo phoneInfo) {
         phoneInfo.ensureDefaultContent();
         PhoneUI phoneUI = new PhoneUI(phoneInfo);
+        ModularUI modularUI = new ModularUI(UI.of(phoneUI, PhoneUI::getAutoGuiScaledSize));
+        Minecraft.getInstance().setScreen(new ModularUIScreen(modularUI, Component.empty()));
+    }
+
+    public static void openUnlockedPhone(PhoneInfo phoneInfo) {
+        phoneInfo.ensureDefaultContent();
+        PhoneUI phoneUI = new PhoneUI(phoneInfo);
+        phoneUI.screenContainer.removeChild(phoneUI.lockScreen);
+        ModularUI modularUI = new ModularUI(UI.of(phoneUI, PhoneUI::getAutoGuiScaledSize));
+        Minecraft.getInstance().setScreen(new ModularUIScreen(modularUI, Component.empty()));
+    }
+
+    public static void openPhoneApp(PhoneInfo phoneInfo, IApp app) {
+        phoneInfo.ensureDefaultContent();
+        PhoneUI phoneUI = new PhoneUI(phoneInfo);
+        phoneUI.screenContainer.removeChild(phoneUI.lockScreen);
+        phoneUI.homeScreen.openApp(app);
         ModularUI modularUI = new ModularUI(UI.of(phoneUI, PhoneUI::getAutoGuiScaledSize));
         Minecraft.getInstance().setScreen(new ModularUIScreen(modularUI, Component.empty()));
     }
@@ -127,5 +151,83 @@ public class SmartPhoneClientUtil {
 
     public static void markOfficialMessageRead(UUID messageId) {
         RPCPacketDistributor.rpcToServer(C2SPayload.OFFICIAL_MESSAGE_MARK_READ, messageId);
+    }
+
+    public static void deleteOfficialMessage(UUID messageId) {
+        RPCPacketDistributor.rpcToServer(C2SPayload.OFFICIAL_MESSAGE_DELETE, messageId);
+    }
+
+    public static void requestChatRooms() {
+        RPCPacketDistributor.rpcToServer(C2SPayload.CHAT_ROOM_REQUEST_LIST);
+    }
+
+    public static void openChatRoom(String roomId) {
+        RPCPacketDistributor.rpcToServer(C2SPayload.CHAT_ROOM_OPEN, roomId);
+    }
+
+    public static void sendChatRoomMessage(String roomId, String body) {
+        RPCPacketDistributor.rpcToServer(C2SPayload.CHAT_ROOM_SEND, roomId, body);
+    }
+
+    public static void sendChatRoomImage(String roomId, byte[] imageData) {
+        String base64 = java.util.Base64.getEncoder().encodeToString(imageData);
+        RPCPacketDistributor.rpcToServer(C2SPayload.CHAT_ROOM_SEND_IMAGE, roomId, base64);
+    }
+
+    public static void requestFriendList() {
+        RPCPacketDistributor.rpcToServer(C2SPayload.FRIEND_LIST_REQUEST);
+    }
+
+    public static void requestFriend(UUID targetUuid) {
+        RPCPacketDistributor.rpcToServer(C2SPayload.FRIEND_REQUEST, targetUuid);
+    }
+
+    public static void acceptFriend(UUID targetUuid) {
+        RPCPacketDistributor.rpcToServer(C2SPayload.FRIEND_ACCEPT, targetUuid);
+    }
+
+    public static void removeFriend(UUID targetUuid) {
+        RPCPacketDistributor.rpcToServer(C2SPayload.FRIEND_REMOVE, targetUuid);
+    }
+
+    public static void openDirectChat(UUID targetUuid) {
+        RPCPacketDistributor.rpcToServer(C2SPayload.DIRECT_CHAT_OPEN, targetUuid);
+    }
+
+    public static void receiveChatRoomList(ChatRoomListSnapshot snapshot) {
+        PhoneChatClientState.receiveRoomList(snapshot);
+        refreshChatRoomUI();
+    }
+
+    public static void receiveChatRoomSnapshot(ChatRoomSnapshot snapshot) {
+        PhoneChatClientState.receiveRoom(snapshot);
+        refreshChatRoomUI();
+    }
+
+    public static void receiveChatRoomMessage(ChatRoomMessage message) {
+        PhoneChatClientState.receiveMessage(message);
+        refreshChatRoomUI();
+    }
+
+    public static void receiveFriendList(FriendListSnapshot snapshot) {
+        PhoneChatClientState.receiveFriendList(snapshot);
+        refreshChatRoomUI();
+    }
+
+    public static void receiveFriendToast(String translationKey, String targetName) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player != null) {
+            minecraft.player.displayClientMessage(Component.translatable(translationKey, targetName == null ? "" : targetName), true);
+        }
+        requestFriendList();
+    }
+
+    private static void refreshChatRoomUI() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!(minecraft.screen instanceof ModularUIScreen screen)) return;
+        if (!(screen.getModularUI().ui.rootElement instanceof PhoneUI phoneUI)) return;
+        if (phoneUI.homeScreen.appUI instanceof ChatRoomUI chatRoomUI) {
+            chatRoomUI.refreshFromState();
+        }
     }
 }

@@ -14,6 +14,7 @@ import com.lowdragmc.lowdraglib2.gui.util.TreeBuilder;
 import com.smart.phone.ui.PhoneUI;
 import com.smart.phone.ui.app.IApp;
 import com.smart.phone.ui.components.Toast;
+import com.smart.phone.Config;
 import com.smart.phone.util.SmartPhoneClientUtil;
 import com.smart.phone.util.UIElementUtil;
 import dev.vfyjxf.taffy.style.AlignContent;
@@ -100,6 +101,8 @@ public class HomeScreen extends UIElement {
         appScrollView.clearAllScrollViewChildren();
         List<IApp> installedApps = phoneUI.phoneInfo.getInstalledApps();
         for (IApp iApp : installedApps) {
+            // 配置中禁用的 app 不显示
+            if (!Config.isAppEnabled(iApp.name())) continue;
             UIElement appIcon = new UIElement().layout(layout -> {
                 layout.flexDirection(FlexDirection.COLUMN);
                 layout.alignItems(AlignItems.CENTER);

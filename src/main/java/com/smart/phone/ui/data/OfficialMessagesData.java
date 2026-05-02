@@ -35,6 +35,11 @@ public class OfficialMessagesData extends IPhoneInfoData {
         findMessage(messageId).ifPresent(message -> message.setRead(true));
     }
 
+    public boolean deleteMessage(UUID messageId) {
+        if (messageId == null) return false;
+        return messages.removeIf(message -> messageId.equals(message.getMessageId()));
+    }
+
     public long unreadCount() {
         return messages.stream().filter(message -> !message.isRead()).count();
     }

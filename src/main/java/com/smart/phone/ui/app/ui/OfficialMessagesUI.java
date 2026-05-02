@@ -6,8 +6,10 @@ import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.data.Horizontal;
 import com.lowdragmc.lowdraglib2.gui.ui.data.TextWrap;
 import com.lowdragmc.lowdraglib2.gui.ui.data.Vertical;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
+import com.smart.phone.ui.components.Toast;
 import com.smart.phone.ui.data.OfficialMessage;
 import com.smart.phone.ui.data.OfficialMessagesData;
 import com.smart.phone.ui.view.HomeScreen;
@@ -181,7 +183,8 @@ public class OfficialMessagesUI extends AppUI {
                 createBackRow(),
                 createLabel(title(message), 7, ColorPattern.WHITE.color, 12, Horizontal.LEFT),
                 createLabel(meta(message), 5, ColorPattern.T_WHITE.color, 8, Horizontal.LEFT),
-                createBodyLabel(message.getBody())
+                createBodyLabel(message.getBody()),
+                createDeleteButton(message)
         );
     }
 
@@ -199,6 +202,47 @@ public class OfficialMessagesUI extends AppUI {
             }
         });
         return row;
+    }
+
+    private Button createDeleteButton(OfficialMessage message) {
+        Button button = new Button();
+        button.layout(layout -> {
+            layout.width(48);
+            layout.height(14);
+            layout.justifyContent(AlignContent.CENTER);
+            layout.alignItems(AlignItems.CENTER);
+        });
+        button.text.layout(layout -> {
+            layout.widthPercent(100);
+            layout.heightPercent(100);
+            layout.marginHorizontal(0);
+        });
+        button.textStyle(textStyle -> {
+            textStyle.fontSize(5);
+            textStyle.textColor(ColorPattern.WHITE.color);
+            textStyle.adaptiveWidth(false);
+            textStyle.adaptiveHeight(false);
+            textStyle.textWrap(TextWrap.HIDE);
+            textStyle.textAlignHorizontal(Horizontal.CENTER);
+            textStyle.textAlignVertical(Vertical.CENTER);
+        });
+        button.text.setOverflowVisible(false);
+        button.setText("smartPhone.ui.button.delete");
+        button.addEventListener(UIEvents.CLICK, event -> {
+            if (event.button != 0) return;
+            event.stopPropagation();
+            deleteMessage(message);
+        });
+        return button;
+    }
+
+    private void deleteMessage(OfficialMessage message) {
+        if (message == null || message.getMessageId() == null) return;
+        if (!data.deleteMessage(message.getMessageId())) return;
+        selectedMessage = null;
+        SmartPhoneClientUtil.deleteOfficialMessage(message.getMessageId());
+        showList();
+        Toast.show(this, Component.translatable("smartPhone.ui.app.officialMessages.deleted"), 1.2f);
     }
 
     private Label createBodyLabel(String body) {

@@ -2,7 +2,9 @@ package com.smart.phone.event;
 
 import com.smart.phone.SmartPhone;
 import com.smart.phone.compat.voicechat.CallManager;
+import com.smart.phone.ui.data.chat.ChatRoomSavedData;
 import com.smart.phone.ui.data.PhoneSavedData;
+import com.smart.phone.ui.data.social.PhoneSocialSavedData;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -21,6 +23,9 @@ public class PhoneServerEvent {
         //只需要保存在主世界的data目录下即可
         if (levelAccessor instanceof ServerLevel world && world.dimension() == Level.OVERWORLD) {
             SmartPhone.setPhoneSavedData(world.getDataStorage().computeIfAbsent(PhoneSavedData.factory(), "phone_info"));
+            SmartPhone.setChatRoomSavedData(world.getDataStorage().computeIfAbsent(ChatRoomSavedData.factory(), ChatRoomSavedData.DATA_NAME));
+            SmartPhone.setPhoneSocialSavedData(world.getDataStorage().computeIfAbsent(PhoneSocialSavedData.factory(), PhoneSocialSavedData.DATA_NAME));
+            SmartPhone.getChatRoomSavedData().ensureDefaultRooms();
         }
     }
 

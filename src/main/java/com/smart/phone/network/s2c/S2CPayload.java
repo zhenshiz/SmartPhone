@@ -5,6 +5,10 @@ import com.lowdragmc.lowdraglib2.syncdata.rpc.RPCSender;
 import com.smart.phone.SmartPhone;
 import com.smart.phone.ui.data.OfficialMessage;
 import com.smart.phone.ui.data.PhoneInfo;
+import com.smart.phone.ui.data.chat.ChatRoomListSnapshot;
+import com.smart.phone.ui.data.chat.ChatRoomMessage;
+import com.smart.phone.ui.data.chat.ChatRoomSnapshot;
+import com.smart.phone.ui.data.social.FriendListSnapshot;
 import com.smart.phone.util.SmartPhoneClientUtil;
 
 public class S2CPayload {
@@ -18,6 +22,11 @@ public class S2CPayload {
     public static final String CALL_ERROR = MOD_ID + "call_error";
     public static final String CALL_STATUS_UPDATE = MOD_ID + "call_status_update";
     public static final String OFFICIAL_MESSAGE_RECEIVED = MOD_ID + "official_message_received";
+    public static final String CHAT_ROOM_LIST_UPDATE = MOD_ID + "chat_room_list_update";
+    public static final String CHAT_ROOM_SNAPSHOT = MOD_ID + "chat_room_snapshot";
+    public static final String CHAT_ROOM_MESSAGE = MOD_ID + "chat_room_message";
+    public static final String FRIEND_LIST_UPDATE = MOD_ID + "friend_list_update";
+    public static final String FRIEND_TOAST = MOD_ID + "friend_toast";
 
     @RPCPacket(OPEN_PHONE)
     public static void openPhone(RPCSender sender, PhoneInfo phoneInfo) {
@@ -62,5 +71,30 @@ public class S2CPayload {
     @RPCPacket(OFFICIAL_MESSAGE_RECEIVED)
     public static void officialMessageReceived(RPCSender sender, OfficialMessage message) {
         SmartPhoneClientUtil.receiveOfficialMessage(message);
+    }
+
+    @RPCPacket(CHAT_ROOM_LIST_UPDATE)
+    public static void chatRoomListUpdate(RPCSender sender, ChatRoomListSnapshot snapshot) {
+        SmartPhoneClientUtil.receiveChatRoomList(snapshot);
+    }
+
+    @RPCPacket(CHAT_ROOM_SNAPSHOT)
+    public static void chatRoomSnapshot(RPCSender sender, ChatRoomSnapshot snapshot) {
+        SmartPhoneClientUtil.receiveChatRoomSnapshot(snapshot);
+    }
+
+    @RPCPacket(CHAT_ROOM_MESSAGE)
+    public static void chatRoomMessage(RPCSender sender, ChatRoomMessage message) {
+        SmartPhoneClientUtil.receiveChatRoomMessage(message);
+    }
+
+    @RPCPacket(FRIEND_LIST_UPDATE)
+    public static void friendListUpdate(RPCSender sender, FriendListSnapshot snapshot) {
+        SmartPhoneClientUtil.receiveFriendList(snapshot);
+    }
+
+    @RPCPacket(FRIEND_TOAST)
+    public static void friendToast(RPCSender sender, String translationKey, String targetName) {
+        SmartPhoneClientUtil.receiveFriendToast(translationKey, targetName);
     }
 }

@@ -10,6 +10,7 @@ import com.lowdragmc.lowdraglib2.syncdata.annotation.Persisted;
 import com.lowdragmc.lowdraglib2.syncdata.annotation.ReadOnlyManaged;
 import com.lowdragmc.lowdraglib2.utils.PersistedParser;
 import com.mojang.serialization.Codec;
+import com.smart.phone.Config;
 import com.smart.phone.SmartPhone;
 import com.smart.phone.SmartPhoneRegistries;
 import com.smart.phone.event.neoforge.PhoneInfoInitEvent;
@@ -92,6 +93,8 @@ public class PhoneInfo implements IConfigurable, IPersistedSerializable {
     public void ensureDefaultContent() {
         SmartPhoneRegistries.APPS.forEach(iApp -> {
             IApp app = iApp.value().get();
+            // 被配置禁用的 app 不自动安装
+            if (!Config.isAppEnabled(app.name())) return;
             if (app.isDefaultInstalled() && installedApps.stream().noneMatch(installedApp -> installedApp.name().equals(app.name()))) {
                 installedApps.add(app);
             }
