@@ -1,27 +1,9 @@
 package com.smart.phone;
 
-import com.lowdragmc.lowdraglib2.registry.AutoRegistry;
-import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
-import com.lowdragmc.lowdraglib2.syncdata.AccessorRegistries;
-import com.lowdragmc.lowdraglib2.syncdata.accessor.direct.CustomDirectAccessor;
 import com.mojang.logging.LogUtils;
-import com.smart.phone.command.ICommand;
-import com.smart.phone.ui.app.IApp;
-import com.smart.phone.ui.data.IPhoneInfoData;
-import com.smart.phone.ui.data.OfficialMessage;
-import com.smart.phone.ui.data.PhoneInfo;
 import com.smart.phone.ui.data.PhoneSavedData;
-import com.smart.phone.ui.data.chat.ChatRoom;
-import com.smart.phone.ui.data.chat.ChatRoomListSnapshot;
-import com.smart.phone.ui.data.chat.ChatRoomMessage;
 import com.smart.phone.ui.data.chat.ChatRoomSavedData;
-import com.smart.phone.ui.data.chat.ChatRoomSnapshot;
-import com.smart.phone.ui.data.chat.ChatRoomSummary;
-import com.smart.phone.ui.data.social.FriendEntry;
-import com.smart.phone.ui.data.social.FriendListSnapshot;
-import com.smart.phone.ui.data.social.FriendRecord;
 import com.smart.phone.ui.data.social.PhoneSocialSavedData;
-import com.smart.phone.ui.time.IPhoneTimeSource;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
@@ -34,11 +16,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import org.slf4j.Logger;
-
-import java.util.function.Supplier;
 
 @Mod(SmartPhone.MOD_ID)
 public class SmartPhone {
@@ -55,99 +33,12 @@ public class SmartPhone {
     private static PhoneSocialSavedData phoneSocialSavedData;
 
     public SmartPhone(IEventBus modEventBus, ModContainer modContainer, Dist dist) {
-        NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
         SmartPhoneRegistries.ITEMS.register(modEventBus);
         SmartPhoneRegistries.CREATIVE_TABS.register(modEventBus);
-        AccessorRegistries.setPriority(0);
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(PhoneInfo.class)
-                .codec(PhoneInfo.CODEC)
-                .streamCodec(PhoneInfo.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(OfficialMessage.class)
-                .codec(OfficialMessage.CODEC)
-                .streamCodec(OfficialMessage.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(ChatRoomMessage.class)
-                .codec(ChatRoomMessage.CODEC)
-                .streamCodec(ChatRoomMessage.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(ChatRoom.class)
-                .codec(ChatRoom.CODEC)
-                .streamCodec(ChatRoom.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(ChatRoomSummary.class)
-                .codec(ChatRoomSummary.CODEC)
-                .streamCodec(ChatRoomSummary.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(ChatRoomListSnapshot.class)
-                .codec(ChatRoomListSnapshot.CODEC)
-                .streamCodec(ChatRoomListSnapshot.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(ChatRoomSnapshot.class)
-                .codec(ChatRoomSnapshot.CODEC)
-                .streamCodec(ChatRoomSnapshot.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(FriendRecord.class)
-                .codec(FriendRecord.CODEC)
-                .streamCodec(FriendRecord.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(FriendEntry.class)
-                .codec(FriendEntry.CODEC)
-                .streamCodec(FriendEntry.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(FriendListSnapshot.class)
-                .codec(FriendListSnapshot.CODEC)
-                .streamCodec(FriendListSnapshot.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(IPhoneTimeSource.class)
-                .codec(IPhoneTimeSource.CODEC)
-                .streamCodec(IPhoneTimeSource.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(IApp.class)
-                .codec(IApp.CODEC)
-                .streamCodec(IApp.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
-        AccessorRegistries.registerAccessor(CustomDirectAccessor.builder(IPhoneInfoData.class)
-                .codec(IPhoneInfoData.CODEC)
-                .streamCodec(IPhoneInfoData.STREAM_CODEC)
-                .codecMark()
-                .build()
-        );
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.CONFIG_SPEC, "%s_config.toml".formatted(MOD_ID));
         if (dist == Dist.CLIENT) {
             modContainer.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
-        }
-    }
-
-    //注册指令
-    private void onRegisterCommands(RegisterCommandsEvent event) {
-        for (AutoRegistry.Holder<LDLRegister, ICommand, Supplier<ICommand>> command : SmartPhoneRegistries.COMMANDS) {
-            command.value().get().register(event.getDispatcher(), event.getBuildContext(), event.getCommandSelection());
         }
     }
 

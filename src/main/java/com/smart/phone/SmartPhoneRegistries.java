@@ -1,7 +1,6 @@
 package com.smart.phone;
 
 import com.lowdragmc.lowdraglib2.registry.AutoRegistry;
-import com.smart.phone.command.ICommand;
 import com.smart.phone.ui.app.IApp;
 import com.smart.phone.ui.data.IPhoneInfoData;
 import com.smart.phone.ui.time.IPhoneTimeSource;
@@ -20,8 +19,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class SmartPhoneRegistries {
-    public static AutoRegistry.LDLibRegister<ICommand, Supplier<ICommand>> COMMANDS;
-
     public static AutoRegistry.LDLibRegister<IApp, Supplier<IApp>> APPS;
 
     public static AutoRegistry.LDLibRegister<IPhoneInfoData, Supplier<IPhoneInfoData>> PHONE_INFO_DATA;
@@ -53,8 +50,6 @@ public class SmartPhoneRegistries {
     }
 
     static {
-        COMMANDS = AutoRegistry.LDLibRegister
-                .create(ResourceLocation.parse(ICommand.COMMAND_ID), ICommand.class, AutoRegistry::noArgsCreator);
         APPS = AutoRegistry.LDLibRegister
                 .create(ResourceLocation.parse(IApp.ID), IApp.class, AutoRegistry::noArgsCreator);
         PHONE_INFO_DATA = AutoRegistry.LDLibRegister

@@ -10,6 +10,7 @@ import com.lowdragmc.lowdraglib2.networking.rpc.RPCPacketDistributor;
 import com.smart.phone.client.chat.PhoneChatClientState;
 import com.smart.phone.client.message.PhoneMessageClientState;
 import com.smart.phone.network.c2s.C2SPayload;
+import com.smart.phone.network.c2s.ChatRoomImagePayload;
 import com.smart.phone.client.call.PhoneCallClientState;
 import com.smart.phone.ui.PhoneUI;
 import com.smart.phone.ui.SettingUI;
@@ -170,8 +171,7 @@ public class SmartPhoneClientUtil {
     }
 
     public static void sendChatRoomImage(String roomId, byte[] imageData) {
-        String base64 = java.util.Base64.getEncoder().encodeToString(imageData);
-        RPCPacketDistributor.rpcToServer(C2SPayload.CHAT_ROOM_SEND_IMAGE, roomId, base64);
+        RPCPacketDistributor.rpcToServer(C2SPayload.CHAT_ROOM_SEND_IMAGE, new ChatRoomImagePayload(roomId, imageData));
     }
 
     public static void requestFriendList() {

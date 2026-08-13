@@ -110,8 +110,8 @@ public class C2SPayload {
     }
 
     @RPCPacket(CHAT_ROOM_SEND_IMAGE)
-    public static void chatRoomSendImage(RPCSender sender, String roomId, String imageDataBase64) {
-        byte[] imageData = java.util.Base64.getDecoder().decode(imageDataBase64);
-        SmartPhoneServerUtil.sendChatRoomImage(sender.asPlayer(), roomId, imageData);
+    public static void chatRoomSendImage(RPCSender sender, ChatRoomImagePayload payload) {
+        if (payload == null) return;
+        SmartPhoneServerUtil.sendChatRoomImage(sender.asPlayer(), payload.getRoomId(), payload.getImageData());
     }
 }

@@ -22,10 +22,15 @@ import dev.vfyjxf.taffy.style.FlexDirection;
 import dev.vfyjxf.taffy.style.FlexWrap;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.Util;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,6 +39,7 @@ public class PhotoAlbumUI extends AppUI {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(PHOTO_ZONE);
     private static final int ROW_BACKGROUND = 0x22000000;
     private static final int TEXT_SECONDARY = 0xFFAAA3B6;
+    private final AtomicBoolean importing = new AtomicBoolean();
 
     public PhotoAlbumUI(HomeScreen homeScreen) {
         super(homeScreen);
@@ -65,7 +71,7 @@ public class PhotoAlbumUI extends AppUI {
     private void showList() {
         applyListLayout();
         appScrollView.clearAllScrollViewChildren();
-        appScrollView.viewContainer.addChildren(createCameraButton());
+        appScrollView.viewContainer.addChildren(createAlbumActions());
         List<PhonePhoto> photos = PhonePhotoAlbum.listPhotos();
         if (photos.isEmpty()) {
             appScrollView.viewContainer.addChildren(createLabel(Component.translatable("smartPhone.ui.app.photoAlbum.empty"), 5.5f, TEXT_SECONDARY, 14, Horizontal.CENTER));
@@ -166,6 +172,64 @@ public class PhotoAlbumUI extends AppUI {
 
     private Button createCameraButton() {
         return createButton("smartPhone.ui.app.photoAlbum.camera", 58, ROW_BACKGROUND, () -> homeScreen.openApp(new CameraApp()));
+    }
+
+    private UIElement createAlbumActions() {
+        UIElement actions = new UIElement().layout(layout -> {
+            layout.widthPercent(100);
+            layout.height(14);
+            layout.flexDirection(FlexDirection.ROW);
+            layout.alignItems(AlignItems.CENTER);
+            layout.justifyContent(AlignContent.CENTER);
+            layout.gapAll(3);
+        });
+        actions.addChildren(
+                createButton("smartPhone.ui.app.photoAlbum.import", 28, ROW_BACKGROUND, this::importPhoto),
+                createButton("smartPhone.ui.app.photoAlbum.camera", 28, ROW_BACKGROUND, () -> homeScreen.openApp(new CameraApp()))
+        );
+        return actions;
+    }
+
+    private void importPhoto() {
+        if (!importing.compareAndSet(false, true)) return;
+
+        Path albumDirectory = PhonePhotoAlbum.photoDirectory();
+        Path initialDirectory = Files.isDirectory(albumDirectory)
+                ? albumDirectory
+                : minecraft.gameDirectory.toPath();
+        String title = Component.translatable("smartPhone.ui.app.photoAlbum.importDialogTitle").getString();
+        String filterDescription = Component.translatable("smartPhone.ui.app.photoAlbum.importDialogFilter").getString();
+
+        CompletableFuture.supplyAsync(
+                        () -> PhonePhotoAlbum.chooseImageForImport(initialDirectory, title, filterDescription),
+                        Util.backgroundExecutor()
+                )
+                .thenApply(selected -> selected.map(PhonePhotoAlbum::importImage).orElse(null))
+                .whenComplete((result, exception) -> minecraft.execute(() -> finishImport(result, exception)));
+    }
+
+    private void finishImport(PhonePhotoAlbum.ImportResult result, Throwable exception) {
+        importing.set(false);
+        if (homeScreen.appUI != this) return;
+
+        if (exception != null || result == null) return;
+        if (result.isSuccess()) {
+            Toast.show(this, Component.translatable("smartPhone.ui.app.photoAlbum.imported"), 1.2f);
+            showList();
+            return;
+        }
+
+        Toast.show(this, Component.translatable(importFailureKey(result.failure())), 1.8f);
+    }
+
+    private String importFailureKey(PhonePhotoAlbum.ImportStatus status) {
+        if (status == null) return "smartPhone.ui.app.photoAlbum.importFailed";
+        return switch (status) {
+            case UNSUPPORTED_FORMAT -> "smartPhone.ui.app.photoAlbum.importUnsupported";
+            case TOO_LARGE -> "smartPhone.ui.app.photoAlbum.importTooLarge";
+            case INVALID_IMAGE -> "smartPhone.ui.app.photoAlbum.importInvalid";
+            case FAILED -> "smartPhone.ui.app.photoAlbum.importFailed";
+        };
     }
 
     private void deletePhoto(PhonePhoto photo) {

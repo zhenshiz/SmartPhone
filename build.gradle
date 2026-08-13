@@ -135,6 +135,8 @@ neoForge {
     }
 }
 
+apply from: rootProject.file('gradle/ldlib2-uitest.gradle')
+
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 modAccessor {
@@ -146,6 +148,8 @@ dependencies {
     //前置模组
     // LDLib2
     implementation("com.lowdragmc.ldlib2:ldlib2-neoforge-${minecraft_version}:${ldlib2_version}:all")
+    implementation("com.zhenshiz:ViScriptLib-neoforge-${minecraft_version}:${viscriptlib_version}")
+    jarJar("com.zhenshiz:ViScriptLib-neoforge-${minecraft_version}:${viscriptlib_version}")
 
     //联动模组
     // KubeJS

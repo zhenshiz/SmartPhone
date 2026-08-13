@@ -15,7 +15,7 @@ import com.lowdragmc.lowdraglib2.gui.util.TreeBuilder;
 import com.lowdragmc.lowdraglib2.gui.util.TreeNode;
 import com.lowdragmc.lowdraglib2.utils.search.IResultHandler;
 import com.smart.phone.ui.app.ui.game.Direction;
-import com.smart.phone.util.common.BeanUtil;
+import com.viscript_lib.util.BeanUtil;
 import dev.vfyjxf.taffy.style.AlignContent;
 import dev.vfyjxf.taffy.style.AlignItems;
 import dev.vfyjxf.taffy.style.FlexDirection;

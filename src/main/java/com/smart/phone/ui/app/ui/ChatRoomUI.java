@@ -142,6 +142,7 @@ public class ChatRoomUI extends AppUI {
             layout.paddingVertical(2);
             layout.gapAll(3);
         }).style(style -> style.backgroundTexture(new ColorRectTexture(ROW_BACKGROUND)));
+        row.setId("chat_room_" + safeSelectorId(room.getRoomId()));
 
         UIElement icon = new UIElement().layout(layout -> {
             layout.width(14);
@@ -384,6 +385,7 @@ public class ChatRoomUI extends AppUI {
 
     private Button createAttachButton() {
         Button button = createCompactButton("smartPhone.ui.app.chatRoom.attach", 18, 0x33000000);
+        button.setId("chat_room_attach");
         button.addEventListener(UIEvents.CLICK, event -> {
             if (event.button != 0) return;
             showPhotoPicker();
@@ -443,6 +445,7 @@ public class ChatRoomUI extends AppUI {
             layout.justifyContent(AlignContent.CENTER);
             layout.gapAll(1);
         });
+        tile.setId("chat_room_photo_" + safeSelectorId(photo.fileName()));
         UIElement thumbnail = new UIElement().layout(layout -> {
             layout.width(28);
             layout.height(22);
@@ -453,6 +456,10 @@ public class ChatRoomUI extends AppUI {
             sendPhotoMessage(photo);
         });
         return tile;
+    }
+
+    private String safeSelectorId(String value) {
+        return value == null ? "" : value.replaceAll("[^a-zA-Z0-9_-]", "_");
     }
 
     private IGuiTexture photoTexture(PhonePhoto photo) {

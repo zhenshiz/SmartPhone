@@ -14,7 +14,7 @@ import com.mojang.serialization.Codec;
 import com.smart.phone.SmartPhone;
 import com.smart.phone.SmartPhoneRegistries;
 import com.smart.phone.ui.data.PhoneInfo;
-import com.smart.phone.util.common.BeanUtil;
+import com.viscript_lib.util.BeanUtil;
 import dev.vfyjxf.taffy.style.TaffyDisplay;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.chat.Component;
@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 
 public abstract class IPhoneTimeSource implements ILDLRegister<IPhoneTimeSource, Supplier<IPhoneTimeSource>>, IPersistedSerializable, IConfigurable {
     public static final Codec<IPhoneTimeSource> CODEC = SmartPhoneRegistries.PHONE_TIME_SOURCE.optionalCodec().dispatch(ILDLRegister::getRegistryHolderOptional,
-            optional -> optional.map(holder -> PersistedParser.createCodec(holder.value()).fieldOf("data"))
+            optional -> optional.map(holder -> PersistedParser.createMapCodec(holder.value()))
                     .orElseGet(LDLibExtraCodecs::errorDecoder));
     public static final StreamCodec<ByteBuf, IPhoneTimeSource> STREAM_CODEC = ByteBufCodecs.fromCodec(CODEC);
 

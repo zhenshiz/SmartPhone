@@ -5,27 +5,44 @@ import com.smart.phone.SmartPhone;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 
 public class PhonePhotoAlbum {
     private static final DateTimeFormatter FILE_NAME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss").withZone(ZoneId.systemDefault());
+    private static final long MAX_IMPORTED_FILE_BYTES = 32L * 1024L * 1024L;
+    private static final long MAX_IMPORTED_SOURCE_PIXELS = 32_000_000L;
+    private static final int MAX_IMPORTED_DIMENSION = 2048;
+    private static final Set<String> SUPPORTED_IMPORT_EXTENSIONS = Set.of("png", "jpg", "jpeg");
+    private static final Set<String> SUPPORTED_IMPORT_FORMATS = Set.of("png", "jpeg");
     private static final Map<Path, ResourceLocation> TEXTURE_CACHE = new ConcurrentHashMap<>();
     // 聊天图片消息缩略图纹理缓存，key 为 messageId
     private static final Map<UUID, ResourceLocation> MESSAGE_IMAGE_CACHE = new ConcurrentHashMap<>();
@@ -74,6 +91,92 @@ public class PhonePhotoAlbum {
         try (NativeImage cropped = new NativeImage(cropWidth, cropHeight, false)) {
             image.copyRect(cropped, cropX, cropY, 0, 0, cropWidth, cropHeight, false, false);
             return saveScreenshot(cropped);
+        }
+    }
+
+    /**
+     * 打开系统文件选择框，仅允许选择可导入的 PNG/JPEG 图片。
+     */
+    public static Optional<Path> chooseImageForImport(Path initialDirectory, String title, String filterDescription) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            String selected = TinyFileDialogs.tinyfd_openFileDialog(
+                    title,
+                    initialDirectory == null ? null : initialDirectory.toAbsolutePath().toString(),
+                    stack.pointers(
+                            stack.UTF8("*.png"),
+                            stack.UTF8("*.jpg"),
+                            stack.UTF8("*.jpeg")
+                    ),
+                    filterDescription,
+                    false
+            );
+            return selected == null || selected.isBlank() ? Optional.empty() : Optional.of(Path.of(selected));
+        } catch (Exception | LinkageError exception) {
+            SmartPhone.LOGGER.warn("Failed to open smart phone image import dialog", exception);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * 校验外部 PNG/JPEG 图片并转换为相册内部使用的 PNG 文件。
+     */
+    public static ImportResult importImage(Path source) {
+        if (source == null || !Files.isRegularFile(source) || !hasSupportedImportExtension(source)) {
+            return ImportResult.failure(ImportStatus.UNSUPPORTED_FORMAT);
+        }
+
+        try {
+            if (Files.size(source) > MAX_IMPORTED_FILE_BYTES) {
+                return ImportResult.failure(ImportStatus.TOO_LARGE);
+            }
+
+            try (ImageInputStream input = ImageIO.createImageInputStream(source.toFile())) {
+                if (input == null) return ImportResult.failure(ImportStatus.INVALID_IMAGE);
+                Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+                if (!readers.hasNext()) return ImportResult.failure(ImportStatus.INVALID_IMAGE);
+
+                ImageReader reader = readers.next();
+                try {
+                    if (!SUPPORTED_IMPORT_FORMATS.contains(reader.getFormatName().toLowerCase(Locale.ROOT))) {
+                        return ImportResult.failure(ImportStatus.UNSUPPORTED_FORMAT);
+                    }
+
+                    reader.setInput(input, true, true);
+                    int width = reader.getWidth(0);
+                    int height = reader.getHeight(0);
+                    if (width <= 0 || height <= 0) return ImportResult.failure(ImportStatus.INVALID_IMAGE);
+                    if ((long) width * height > MAX_IMPORTED_SOURCE_PIXELS) {
+                        return ImportResult.failure(ImportStatus.TOO_LARGE);
+                    }
+
+                    ImageReadParam parameters = reader.getDefaultReadParam();
+                    int sampleSize = Math.max(1, (int) Math.ceil(Math.max(width, height) / (double) MAX_IMPORTED_DIMENSION));
+                    parameters.setSourceSubsampling(sampleSize, sampleSize, 0, 0);
+                    BufferedImage image = reader.read(0, parameters);
+                    if (image == null) return ImportResult.failure(ImportStatus.INVALID_IMAGE);
+
+                    Path directory = photoDirectory();
+                    Files.createDirectories(directory);
+                    Path target = createUniquePhotoPath(directory);
+                    Path temporary = Files.createTempFile(directory, "import-", ".png.tmp");
+                    try {
+                        if (!ImageIO.write(image, "png", temporary.toFile())) {
+                            return ImportResult.failure(ImportStatus.FAILED);
+                        }
+                        moveImportedPhoto(temporary, target);
+                    } finally {
+                        Files.deleteIfExists(temporary);
+                    }
+                    return createPhoto(target)
+                            .map(ImportResult::success)
+                            .orElseGet(() -> ImportResult.failure(ImportStatus.FAILED));
+                } finally {
+                    reader.dispose();
+                }
+            }
+        } catch (IOException | RuntimeException exception) {
+            SmartPhone.LOGGER.warn("Failed to import smart phone photo {}", source, exception);
+            return ImportResult.failure(ImportStatus.FAILED);
         }
     }
 
@@ -130,8 +233,8 @@ public class PhonePhotoAlbum {
         if (photo == null) return Optional.empty();
         Path normalized = photo.path().toAbsolutePath().normalize();
         if (!Files.isRegularFile(normalized)) return Optional.empty();
-        try (InputStream inputStream = Files.newInputStream(normalized)) {
-            NativeImage image = NativeImage.read(inputStream);
+        try (InputStream inputStream = Files.newInputStream(normalized);
+             NativeImage image = NativeImage.read(inputStream)) {
             return Optional.of(downscaleToPngBytes(image, 160, 90));
         } catch (Exception exception) {
             SmartPhone.LOGGER.warn("Failed to create thumbnail for {}", normalized, exception);
@@ -214,5 +317,40 @@ public class PhonePhotoAlbum {
             index++;
         }
         return target;
+    }
+
+    private static boolean hasSupportedImportExtension(Path source) {
+        String fileName = source.getFileName().toString();
+        int separator = fileName.lastIndexOf('.');
+        return separator >= 0 && SUPPORTED_IMPORT_EXTENSIONS.contains(fileName.substring(separator + 1).toLowerCase(Locale.ROOT));
+    }
+
+    private static void moveImportedPhoto(Path temporary, Path target) throws IOException {
+        try {
+            Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException exception) {
+            Files.move(temporary, target);
+        }
+    }
+
+    public enum ImportStatus {
+        UNSUPPORTED_FORMAT,
+        TOO_LARGE,
+        INVALID_IMAGE,
+        FAILED
+    }
+
+    public record ImportResult(PhonePhoto photo, ImportStatus failure) {
+        public static ImportResult success(PhonePhoto photo) {
+            return new ImportResult(photo, null);
+        }
+
+        public static ImportResult failure(ImportStatus status) {
+            return new ImportResult(null, status);
+        }
+
+        public boolean isSuccess() {
+            return photo != null;
+        }
     }
 }

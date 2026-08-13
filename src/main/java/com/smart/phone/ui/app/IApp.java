@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 
 public abstract class IApp implements ILDLRegister<IApp, Supplier<IApp>>, IPersistedSerializable {
     public static final Codec<IApp> CODEC = SmartPhoneRegistries.APPS.optionalCodec().dispatch(ILDLRegister::getRegistryHolderOptional,
-            optional -> optional.map(holder -> PersistedParser.createCodec(holder.value()).fieldOf("data"))
+            optional -> optional.map(holder -> PersistedParser.createMapCodec(holder.value()))
                     .orElseGet(LDLibExtraCodecs::errorDecoder));
     public static final StreamCodec<ByteBuf, IApp> STREAM_CODEC = ByteBufCodecs.fromCodec(CODEC);
     public static final String ID = SmartPhone.MOD_ID + ":app";

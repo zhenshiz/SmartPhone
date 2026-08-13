@@ -6,6 +6,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.smart.phone.SmartPhone;
 import com.smart.phone.util.SmartPhoneServerUtil;
+import com.viscript_lib.register.ICommand;
 import lombok.SneakyThrows;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;

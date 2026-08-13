@@ -18,7 +18,7 @@ public abstract class IPhoneInfoData implements ILDLRegister<IPhoneInfoData, Sup
     public static final Codec<IPhoneInfoData> CODEC = SmartPhoneRegistries.PHONE_INFO_DATA.optionalCodec().dispatch(
             ILDLRegister::getRegistryHolderOptional,
             optional -> optional
-                    .map(holder -> PersistedParser.createCodec(holder.value()).fieldOf("data"))
+                    .map(holder -> PersistedParser.createMapCodec(holder.value()))
                     .orElseGet(LDLibExtraCodecs::errorDecoder)
     );
 
