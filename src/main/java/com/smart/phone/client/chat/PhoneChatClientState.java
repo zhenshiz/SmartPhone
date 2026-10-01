@@ -20,6 +20,13 @@ public class PhoneChatClientState {
     private static final Map<String, ChatRoomSnapshot> roomSnapshots = new HashMap<>();
     private static int version;
 
+    public static void clear() {
+        roomList = new ChatRoomListSnapshot();
+        friendList = new FriendListSnapshot();
+        roomSnapshots.clear();
+        version++;
+    }
+
     public static int getVersion() {
         return version;
     }

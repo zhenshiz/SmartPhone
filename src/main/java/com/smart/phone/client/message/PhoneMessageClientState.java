@@ -10,6 +10,8 @@ public class PhoneMessageClientState {
     private static OfficialMessage notification;
     private static long notificationUntilMillis;
 
+    public static void clear() { notification = null; notificationUntilMillis = 0; }
+
     public static void receive(OfficialMessage message) {
         notification = message;
         notificationUntilMillis = System.currentTimeMillis() + NOTIFICATION_DURATION_MILLIS;

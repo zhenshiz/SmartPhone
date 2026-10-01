@@ -18,6 +18,11 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 @EventBusSubscriber(modid = SmartPhone.MOD_ID)
 public class PhoneServerEvent {
     @SubscribeEvent
+    public static void onServerStopped(net.neoforged.neoforge.event.server.ServerStoppedEvent event) {
+        com.smart.phone.security.PhoneSecurityServer.clear();
+    }
+
+    @SubscribeEvent
     public static void onWorldLoad(LevelEvent.Load event) {
         LevelAccessor levelAccessor = event.getLevel();
         //只需要保存在主世界的data目录下即可
@@ -32,6 +37,7 @@ public class PhoneServerEvent {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         CallManager.getInstance().tick(event.getServer());
+        com.smart.phone.security.PhoneSecurityServer.tick(event.getServer());
     }
 
     @SubscribeEvent

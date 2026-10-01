@@ -20,7 +20,7 @@ public class PhoneCall extends IApp {
 
     @Override
     public IGuiTexture getIcon() {
-        return SpriteTexture.of(SmartPhone.formattedMod("textures/item/phone.png"));
+        return SpriteTexture.of(SmartPhone.formattedMod("textures/ui/app/phone_call.png"));
     }
 
     @Override

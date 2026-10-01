@@ -13,6 +13,8 @@ public class Config {
     //上边框 %
     public static ModConfigSpec.DoubleValue PHONE_MARGIN_TOP;
 
+    public static ModConfigSpec.BooleanValue HELD_PHONE_MODE;
+
     // 禁用的 app 注册名，逗号分隔，如 "smart_phone:camera,smart_phone:phone_call"
     public static ModConfigSpec.ConfigValue<String> DISABLED_APPS;
 
@@ -21,6 +23,9 @@ public class Config {
         CONFIG_BUILDER.push("config");
         PHONE_MARGIN_LEFT = CONFIG_BUILDER.defineInRange("phoneMarginLeft", 0f, -100, 100);
         PHONE_MARGIN_TOP = CONFIG_BUILDER.defineInRange("phoneMarginTop", 0f, -100, 100);
+        HELD_PHONE_MODE = CONFIG_BUILDER
+                .comment("切换到主手手机时立即举起右手和手机；左/上边距同时调整右手和手机的停留位置")
+                .define("heldPhoneMode", true);
         CONFIG_BUILDER.pop();
 
         CONFIG_BUILDER.push("apps");

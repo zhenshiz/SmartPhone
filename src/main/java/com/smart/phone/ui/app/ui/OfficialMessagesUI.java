@@ -35,11 +35,19 @@ public class OfficialMessagesUI extends AppUI {
     private static final int AVATAR_READ = 0xFF3D3946;
     private static final int TEXT_PRIMARY_UNREAD = ColorPattern.WHITE.color;
     private static final int TEXT_PRIMARY_READ = 0xFFD6D2DF;
-    private static final int TEXT_SECONDARY = 0xFFAAA3B6;
+    private static final int TEXT_SECONDARY = 0xFFCCCCCC;
     private static final int TEXT_MUTED = 0xFF898395;
     private static final int SEPARATOR = 0x22FFFFFF;
     private final OfficialMessagesData data;
     private OfficialMessage selectedMessage;
+    private java.util.UUID previewMessageId;
+
+    public void selectPreviewMessage(java.util.UUID messageId) {
+        previewMessageId = messageId;
+        select(".phone_selected_official_message").forEach(element -> element.removeClass("phone_selected_official_message"));
+        if (messageId != null) select("#official_message_" + messageId)
+                .forEach(element -> element.addClass("phone_selected_official_message"));
+    }
 
     public OfficialMessagesUI(HomeScreen homeScreen) {
         super(homeScreen);
@@ -101,7 +109,10 @@ public class OfficialMessagesUI extends AppUI {
             layout.paddingHorizontal(4);
             layout.paddingVertical(2);
             layout.gapAll(4);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(message.isRead() ? ROW_BACKGROUND_READ : ROW_BACKGROUND_UNREAD)));
+        }).addClass("phone_row");
+
+        row.setId("official_message_" + message.getMessageId());
+        if (message.getMessageId().equals(previewMessageId)) row.addClass("phone_selected_official_message");
 
         UIElement textColumn = new UIElement().layout(layout -> {
             layout.flex(1);
@@ -166,16 +177,23 @@ public class OfficialMessagesUI extends AppUI {
             layout.height(18);
             layout.justifyContent(AlignContent.CENTER);
             layout.alignItems(AlignItems.CENTER);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(message.isRead() ? AVATAR_READ : AVATAR_UNREAD)));
+        }).addClass("phone_badge");
         icon.addChildren(createFullWidthLabel(Component.literal("!"), 8, ColorPattern.WHITE.color, 18, Horizontal.CENTER));
         return icon;
     }
 
     private void openMessage(OfficialMessage message) {
+        if (homeScreen.getPhoneUI().isPreview()) {
+            // 编辑器选择只改变选中项，不把预设的未读消息标记为已读。
+            selectPreviewMessage(message.getMessageId());
+            homeScreen.getPhoneUI().selectPreviewOfficialMessage(message.getMessageId());
+            return;
+        }
         selectedMessage = message;
         if (!message.isRead()) {
             message.setRead(true);
-            SmartPhoneClientUtil.markOfficialMessageRead(message.getMessageId());
+            if (homeScreen.getPhoneUI().isPreview()) homeScreen.savePhoneData();
+            else SmartPhoneClientUtil.markOfficialMessageRead(message.getMessageId());
         }
         applyDetailLayout();
         appScrollView.clearAllScrollViewChildren();
@@ -194,7 +212,7 @@ public class OfficialMessagesUI extends AppUI {
             layout.height(14);
             layout.justifyContent(AlignContent.CENTER);
             layout.alignItems(AlignItems.CENTER);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(0x33000000)));
+        }).addClass("phone_row");
         row.addChildren(createLabel(Component.translatable("smartPhone.ui.app.officialMessages.back"), 5, ColorPattern.WHITE.color, 10, Horizontal.CENTER));
         row.addEventListener(UIEvents.CLICK, event -> {
             if (event.button == 0) {
@@ -206,6 +224,7 @@ public class OfficialMessagesUI extends AppUI {
 
     private Button createDeleteButton(OfficialMessage message) {
         Button button = new Button();
+        button.setId("official_message_delete");
         button.layout(layout -> {
             layout.width(48);
             layout.height(14);
@@ -219,7 +238,6 @@ public class OfficialMessagesUI extends AppUI {
         });
         button.textStyle(textStyle -> {
             textStyle.fontSize(5);
-            textStyle.textColor(ColorPattern.WHITE.color);
             textStyle.adaptiveWidth(false);
             textStyle.adaptiveHeight(false);
             textStyle.textWrap(TextWrap.HIDE);
@@ -240,7 +258,8 @@ public class OfficialMessagesUI extends AppUI {
         if (message == null || message.getMessageId() == null) return;
         if (!data.deleteMessage(message.getMessageId())) return;
         selectedMessage = null;
-        SmartPhoneClientUtil.deleteOfficialMessage(message.getMessageId());
+        if (homeScreen.getPhoneUI().isPreview()) homeScreen.savePhoneData();
+        else SmartPhoneClientUtil.deleteOfficialMessage(message.getMessageId());
         showList();
         Toast.show(this, Component.translatable("smartPhone.ui.app.officialMessages.deleted"), 1.2f);
     }

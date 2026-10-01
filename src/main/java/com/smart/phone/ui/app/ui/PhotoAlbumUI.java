@@ -15,6 +15,7 @@ import com.smart.phone.client.camera.PhonePhoto;
 import com.smart.phone.client.camera.PhonePhotoAlbum;
 import com.smart.phone.ui.app.CameraApp;
 import com.smart.phone.ui.components.Toast;
+import com.smart.phone.ui.editor.PhotoEditorScreen;
 import com.smart.phone.ui.view.HomeScreen;
 import dev.vfyjxf.taffy.style.AlignContent;
 import dev.vfyjxf.taffy.style.AlignItems;
@@ -37,8 +38,7 @@ import java.util.Optional;
 public class PhotoAlbumUI extends AppUI {
     private static final ZoneId PHOTO_ZONE = ZoneId.systemDefault();
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(PHOTO_ZONE);
-    private static final int ROW_BACKGROUND = 0x22000000;
-    private static final int TEXT_SECONDARY = 0xFFAAA3B6;
+    private static final int TEXT_SECONDARY = 0xFFCCCCCC;
     private final AtomicBoolean importing = new AtomicBoolean();
 
     public PhotoAlbumUI(HomeScreen homeScreen) {
@@ -89,10 +89,10 @@ public class PhotoAlbumUI extends AppUI {
             layout.flexDirection(FlexDirection.ROW);
             layout.flexWrap(FlexWrap.WRAP);
             layout.alignItems(AlignItems.CENTER);
-            layout.justifyContent(AlignContent.CENTER);
+            layout.justifyContent(AlignContent.FLEX_START);
             layout.paddingAll(2);
             layout.gapAll(3);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(ROW_BACKGROUND)));
+        }).addClass("phone_photo_grid");
         photos.forEach(photo -> grid.addChildren(createPhotoTile(photo)));
         return grid;
     }
@@ -106,6 +106,8 @@ public class PhotoAlbumUI extends AppUI {
             layout.justifyContent(AlignContent.CENTER);
             layout.gapAll(1);
         });
+        tile.addClass("phone_photo_tile");
+        tile.setId("phone_photo_" + photo.fileName().replaceAll("[^a-zA-Z0-9_-]", "_"));
         UIElement thumbnail = new UIElement().layout(layout -> {
             layout.width(28);
             layout.height(22);
@@ -146,7 +148,7 @@ public class PhotoAlbumUI extends AppUI {
             layout.height(13);
             layout.justifyContent(AlignContent.CENTER);
             layout.alignItems(AlignItems.CENTER);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(ROW_BACKGROUND)));
+        }).addClass("phone_row");
         row.addChildren(createLabel(Component.translatable("smartPhone.ui.app.photoAlbum.back"), 4.5f, ColorPattern.WHITE.color, 10, Horizontal.CENTER));
         row.addEventListener(UIEvents.CLICK, event -> {
             if (event.button == 0) showList();
@@ -164,14 +166,27 @@ public class PhotoAlbumUI extends AppUI {
             layout.gapAll(3);
         });
         row.addChildren(
-                createButton("smartPhone.ui.app.photoAlbum.camera", 36, ROW_BACKGROUND, () -> homeScreen.openApp(new CameraApp())),
-                createButton("smartPhone.ui.app.photoAlbum.delete", 36, 0x553A2530, () -> deletePhoto(photo))
+                createButton("smartPhone.ui.app.photoAlbum.edit", 24, () -> editPhoto(photo)).setId("phone_photo_edit"),
+                createButton("smartPhone.ui.app.photoAlbum.camera", 24, () -> homeScreen.openApp(new CameraApp())),
+                createButton("smartPhone.ui.app.photoAlbum.delete", 24, () -> deletePhoto(photo))
         );
         return row;
     }
 
+    private void editPhoto(PhonePhoto photo) {
+        try {
+            PhotoEditorScreen.open(photo, saved -> {
+                openPhoto(saved);
+                Toast.show(this, Component.translatable("smartPhone.ui.app.photoAlbum.edit.saved"), 1.5f);
+            });
+        } catch (java.io.IOException | RuntimeException exception) {
+            com.smart.phone.SmartPhone.LOGGER.warn("Failed to open phone photo editor {}", photo.path(), exception);
+            Toast.show(this, Component.translatable("smartPhone.ui.app.photoAlbum.edit.loadFailed"), 1.8f);
+        }
+    }
+
     private Button createCameraButton() {
-        return createButton("smartPhone.ui.app.photoAlbum.camera", 58, ROW_BACKGROUND, () -> homeScreen.openApp(new CameraApp()));
+        return createButton("smartPhone.ui.app.photoAlbum.camera", 58, () -> homeScreen.openApp(new CameraApp()));
     }
 
     private UIElement createAlbumActions() {
@@ -184,8 +199,8 @@ public class PhotoAlbumUI extends AppUI {
             layout.gapAll(3);
         });
         actions.addChildren(
-                createButton("smartPhone.ui.app.photoAlbum.import", 28, ROW_BACKGROUND, this::importPhoto),
-                createButton("smartPhone.ui.app.photoAlbum.camera", 28, ROW_BACKGROUND, () -> homeScreen.openApp(new CameraApp()))
+                createButton("smartPhone.ui.app.photoAlbum.import", 28, this::importPhoto),
+                createButton("smartPhone.ui.app.photoAlbum.camera", 28, () -> homeScreen.openApp(new CameraApp()))
         );
         return actions;
     }
@@ -241,17 +256,17 @@ public class PhotoAlbumUI extends AppUI {
 
     private IGuiTexture photoTexture(PhonePhoto photo) {
         Optional<ResourceLocation> texture = PhonePhotoAlbum.textureFor(photo);
-        return texture.<IGuiTexture>map(SpriteTexture::of).orElseGet(() -> new ColorRectTexture(0xFF312D3A));
+        return texture.<IGuiTexture>map(SpriteTexture::of).orElseGet(() -> new ColorRectTexture(0xFF313233));
     }
 
-    private Button createButton(String key, float width, int backgroundColor, Runnable onClick) {
+    private Button createButton(String key, float width, Runnable onClick) {
         Button button = new Button();
         button.layout(layout -> {
             layout.width(width);
             layout.height(13);
             layout.justifyContent(AlignContent.CENTER);
             layout.alignItems(AlignItems.CENTER);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(backgroundColor)));
+        });
         button.text.layout(layout -> {
             layout.widthPercent(100);
             layout.heightPercent(100);
@@ -259,7 +274,6 @@ public class PhotoAlbumUI extends AppUI {
         });
         button.textStyle(textStyle -> {
             textStyle.fontSize(4.1f);
-            textStyle.textColor(ColorPattern.WHITE.color);
             textStyle.adaptiveWidth(false);
             textStyle.adaptiveHeight(false);
             textStyle.textWrap(TextWrap.HIDE);

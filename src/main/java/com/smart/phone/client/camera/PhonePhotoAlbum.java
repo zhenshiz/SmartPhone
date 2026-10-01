@@ -45,7 +45,8 @@ public class PhonePhotoAlbum {
     private static final Set<String> SUPPORTED_IMPORT_FORMATS = Set.of("png", "jpeg");
     private static final Map<Path, ResourceLocation> TEXTURE_CACHE = new ConcurrentHashMap<>();
     // 聊天图片消息缩略图纹理缓存，key 为 messageId
-    private static final Map<UUID, ResourceLocation> MESSAGE_IMAGE_CACHE = new ConcurrentHashMap<>();
+    private record MessageImage(byte[] data, ResourceLocation texture) {}
+    private static final Map<UUID, MessageImage> MESSAGE_IMAGE_CACHE = new ConcurrentHashMap<>();
     private static final AtomicInteger MESSAGE_TEXTURE_COUNTER = new AtomicInteger(0);
 
     public static Path photoDirectory() {
@@ -81,6 +82,32 @@ public class PhonePhotoAlbum {
         Path target = createUniquePhotoPath(directory);
         image.writeToFile(target);
         return createPhoto(target).orElseGet(() -> new PhonePhoto(target, System.currentTimeMillis(), 0));
+    }
+
+    /**
+     * 将编辑结果保存为原照片旁的新 PNG，保留原文件及原始像素尺寸。
+     *
+     * @param original 原照片的文件信息
+     * @param image 调用方拥有的编辑图像；此方法不关闭图像
+     * @return 保存后的照片信息
+     * @throws IOException 无法写入编辑后的照片时抛出
+     */
+    public static PhonePhoto saveEditedCopy(PhonePhoto original, NativeImage image) throws IOException {
+        Path directory = original.path().toAbsolutePath().normalize().getParent();
+        String name = original.fileName();
+        String base = name.substring(0, name.lastIndexOf('.')) + "_edited";
+        Path target = directory.resolve(base + ".png");
+        for (int index = 1; Files.exists(target); index++) {
+            target = directory.resolve(base + "_" + index + ".png");
+        }
+        Path temporary = Files.createTempFile(directory, "edit-", ".png.tmp");
+        try {
+            image.writeToFile(temporary);
+            moveImportedPhoto(temporary, target);
+            return new PhonePhoto(target, Files.getLastModifiedTime(target).toMillis(), Files.size(target));
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 
     public static PhonePhoto saveScreenshot(NativeImage image, int x, int y, int width, int height) throws IOException {
@@ -293,14 +320,18 @@ public class PhonePhotoAlbum {
      */
     public static Optional<ResourceLocation> textureForMessageData(UUID messageId, byte[] pngBytes) {
         if (messageId == null || pngBytes == null || pngBytes.length == 0) return Optional.empty();
-        ResourceLocation cached = MESSAGE_IMAGE_CACHE.get(messageId);
-        if (cached != null) return Optional.of(cached);
+        MessageImage cached = MESSAGE_IMAGE_CACHE.get(messageId);
+        if (cached != null && java.util.Arrays.equals(cached.data(), pngBytes)) return Optional.of(cached.texture());
+        if (cached != null) {
+            Minecraft.getInstance().getTextureManager().release(cached.texture());
+            MESSAGE_IMAGE_CACHE.remove(messageId);
+        }
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(pngBytes)) {
             NativeImage image = NativeImage.read(inputStream);
             // 递增 id 避免纹理名冲突
             ResourceLocation location = Minecraft.getInstance().getTextureManager()
                     .register("smart_phone_msg_" + MESSAGE_TEXTURE_COUNTER.getAndIncrement(), new DynamicTexture(image));
-            MESSAGE_IMAGE_CACHE.put(messageId, location);
+            MESSAGE_IMAGE_CACHE.put(messageId, new MessageImage(pngBytes.clone(), location));
             return Optional.of(location);
         } catch (Exception exception) {
             SmartPhone.LOGGER.warn("Failed to create texture from chat image message {}", messageId, exception);

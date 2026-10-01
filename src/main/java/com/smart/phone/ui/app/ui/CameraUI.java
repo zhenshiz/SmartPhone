@@ -27,9 +27,8 @@ import java.util.Optional;
 
 public class CameraUI extends AppUI {
     private static final float[] ZOOM_LEVELS = {1.0f, 1.5f, 2.0f, 3.0f};
-    private static final int PANEL_BACKGROUND = 0x22000000;
     private static final int VIEWFINDER_BACKGROUND = 0xCC11141A;
-    private static final int TEXT_SECONDARY = 0xFFAAA3B6;
+    private static final int TEXT_SECONDARY = 0xFFCCCCCC;
 
     private int zoomIndex = 0;
     private final Label zoomLabel = createLabel(Component.empty(), 5, ColorPattern.WHITE.color, 9, Horizontal.CENTER);
@@ -89,15 +88,15 @@ public class CameraUI extends AppUI {
             layout.gapAll(3);
         });
         row.addChildren(
-                createButton("smartPhone.ui.app.camera.zoomOut", 22, PANEL_BACKGROUND, () -> setZoomIndex(zoomIndex - 1)),
+                createButton("smartPhone.ui.app.camera.zoomOut", 22, () -> setZoomIndex(zoomIndex - 1)),
                 createFlexText(Component.translatable("smartPhone.ui.app.camera.zoom"), 5, TEXT_SECONDARY, 12, Horizontal.CENTER),
-                createButton("smartPhone.ui.app.camera.zoomIn", 22, PANEL_BACKGROUND, () -> setZoomIndex(zoomIndex + 1))
+                createButton("smartPhone.ui.app.camera.zoomIn", 22, () -> setZoomIndex(zoomIndex + 1))
         );
         return row;
     }
 
     private Button createCaptureButton() {
-        return createButton("smartPhone.ui.app.camera.capture", 62, 0x553D5D7A, () -> {
+        return createButton("smartPhone.ui.app.camera.capture", 62, () -> {
             if (!PhoneCameraClient.openPreview(homeScreen.getPhoneUI().phoneInfo)) {
                 Toast.show(this, Component.translatable("smartPhone.ui.app.camera.unavailable"), 1.4f);
             }
@@ -105,7 +104,7 @@ public class CameraUI extends AppUI {
     }
 
     private Button createAlbumButton() {
-        return createButton("smartPhone.ui.app.camera.album", 62, PANEL_BACKGROUND, () -> homeScreen.openApp(new PhotoAlbumApp()));
+        return createButton("smartPhone.ui.app.camera.album", 62, () -> homeScreen.openApp(new PhotoAlbumApp()));
     }
 
     private UIElement createLatestPhoto() {
@@ -122,7 +121,7 @@ public class CameraUI extends AppUI {
             layout.alignItems(AlignItems.CENTER);
             layout.paddingHorizontal(3);
             layout.gapAll(3);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(PANEL_BACKGROUND)));
+        }).addClass("phone_panel");
 
         UIElement thumbnail = new UIElement().layout(layout -> {
             layout.width(24);
@@ -149,7 +148,7 @@ public class CameraUI extends AppUI {
 
     private IGuiTexture photoTexture(PhonePhoto photo) {
         Optional<ResourceLocation> texture = PhonePhotoAlbum.textureFor(photo);
-        return texture.<IGuiTexture>map(SpriteTexture::of).orElseGet(() -> new ColorRectTexture(0xFF312D3A));
+        return texture.<IGuiTexture>map(SpriteTexture::of).orElseGet(() -> new ColorRectTexture(0xFF313233));
     }
 
     private void setZoomIndex(int index) {
@@ -165,14 +164,14 @@ public class CameraUI extends AppUI {
         zoomLabel.setText(Component.literal("%.1fx".formatted(currentZoom())));
     }
 
-    private Button createButton(String key, float width, int backgroundColor, Runnable onClick) {
+    private Button createButton(String key, float width, Runnable onClick) {
         Button button = new Button();
         button.layout(layout -> {
             layout.width(width);
             layout.height(13);
             layout.justifyContent(AlignContent.CENTER);
             layout.alignItems(AlignItems.CENTER);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(backgroundColor)));
+        });
         button.text.layout(layout -> {
             layout.widthPercent(100);
             layout.heightPercent(100);
@@ -180,7 +179,6 @@ public class CameraUI extends AppUI {
         });
         button.textStyle(textStyle -> {
             textStyle.fontSize(4.2f);
-            textStyle.textColor(ColorPattern.WHITE.color);
             textStyle.adaptiveWidth(false);
             textStyle.adaptiveHeight(false);
             textStyle.textWrap(TextWrap.HIDE);

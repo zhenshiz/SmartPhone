@@ -4,7 +4,6 @@ import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.data.ScrollDisplay;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
-import com.lowdragmc.lowdraglib2.gui.ui.styletemplate.Sprites;
 import com.smart.phone.ui.view.HomeScreen;
 import dev.vfyjxf.taffy.style.AlignItems;
 import dev.vfyjxf.taffy.style.FlexDirection;
@@ -27,7 +26,7 @@ public class AppUI extends UIElement {
             layout.paddingTop(8);
             layout.flexDirection(FlexDirection.COLUMN);
             layout.alignItems(AlignItems.CENTER);
-        }).style(style -> style.backgroundTexture(Sprites.RECT_SOLID));
+        }).addClass("phone_app");
 
         appScrollView.viewContainer.layout(layout -> layout.alignItems(AlignItems.CENTER));
         appScrollView.viewPort.getStyle().backgroundTexture(IGuiTexture.EMPTY);

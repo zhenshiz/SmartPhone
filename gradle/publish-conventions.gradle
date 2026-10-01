@@ -1,0 +1,164 @@
+// 与 ViScriptLib 一样使用 Minotaur / CurseForgeGradle 和 publishMods 聚合任务。
+apply plugin: 'com.modrinth.minotaur'
+apply plugin: 'net.darkhax.curseforgegradle'
+
+def trimToNull = { String value -> value?.trim() ?: null }
+def publishEnv = [:]
+// 使用 Provider 读取，让普通构建的配置缓存能感知 publish.env 的变化。
+providers.fileContents(layout.projectDirectory.file('publish.env')).asText.orElse('').get().eachLine { line ->
+    def trimmed = line.trim()
+    if (trimmed && !trimmed.startsWith('#')) {
+        def separator = trimmed.indexOf('=')
+        if (separator > 0) {
+            def value = trimmed.substring(separator + 1).trim()
+            if (value.length() >= 2 && ((value.startsWith('"') && value.endsWith('"'))
+                    || (value.startsWith("'") && value.endsWith("'")))) {
+                value = value.substring(1, value.length() - 1)
+            }
+            publishEnv[trimmed.substring(0, separator).trim()] = value
+        }
+    }
+}
+def envOrFile = { String name ->
+    trimToNull(providers.environmentVariable(name).orNull) ?: trimToNull(publishEnv[name] as String)
+}
+def propertyValue = { String name -> trimToNull(providers.gradleProperty(name).orNull) }
+def splitSlugs = { String value -> (value ?: '').split(',').collect { it.trim() }.findAll { it }.unique() }
+
+def cfProjectId = propertyValue('publish_curseforge_project_id') ?: envOrFile('CURSEFORGE_PROJECT_ID')
+def mrProjectId = propertyValue('publish_modrinth_project_id') ?: envOrFile('MODRINTH_PROJECT_ID')
+def cfToken = envOrFile('CURSEFORGE_TOKEN')
+def mrToken = envOrFile('MODRINTH_TOKEN')
+def publishVersion = propertyValue('mod_version') ?: project.version.toString()
+def publishName = "${project.mod_name} ${publishVersion}".toString()
+def publishGameVersions = [project.minecraft_version.toString()]
+def versionLower = publishVersion.toLowerCase(Locale.ROOT)
+def releaseType = propertyValue('publish_release_type')
+        ?: (versionLower.contains('alpha') ? 'alpha' : versionLower.contains('beta') ? 'beta' : 'release')
+def publishChangelog = envOrFile('PUBLISH_CHANGELOG') ?: propertyValue('publish_changelog')
+        ?: trimToNull(providers.fileContents(layout.projectDirectory.file('CHANGELOG.md')).asText.orElse('').get())
+        ?: "${publishName} for Minecraft ${publishGameVersions.first()} / NeoForge.".toString()
+def cfRequires = splitSlugs(propertyValue('publish_curseforge_requires'))
+def mrRequires = splitSlugs(propertyValue('publish_modrinth_requires'))
+def cfOptional = splitSlugs(propertyValue('publish_curseforge_optional'))
+def mrOptional = splitSlugs(propertyValue('publish_modrinth_optional'))
+def dryRun = providers.gradleProperty('publish_dry_run').isPresent()
+def mainJar = tasks.named('jar')
+
+def validateMetadata = tasks.register('validateModPublishingMetadata') {
+    doLast {
+        if (!cfProjectId && !mrProjectId) {
+            throw new GradleException('未配置发布平台，请填写 publish_curseforge_project_id / publish_modrinth_project_id，或 publish.env 中对应的项目 ID。')
+        }
+        if (!['release', 'beta', 'alpha'].contains(releaseType)) {
+            throw new GradleException('publish_release_type 必须是 release、beta 或 alpha。')
+        }
+    }
+}
+// 独立上传仅检查自己的凭据；publishMods 会在任一上传开始前检查全部已配置平台。
+def registerValidation = { String taskName, String platform, String platformId, String tokenName, String token ->
+    tasks.register(taskName) {
+        dependsOn validateMetadata
+        doLast {
+            if (!platformId) {
+                throw new GradleException("${platform} 未配置项目 ID，请填写 gradle.properties 或 publish.env。")
+            }
+            if (!dryRun && !token) {
+                throw new GradleException("无法发布 ${platform}，缺少 ${tokenName}（环境变量或 publish.env）。")
+            }
+        }
+    }
+}
+def validateCf = registerValidation('validateCurseforgePublishing', 'CurseForge', cfProjectId, 'CURSEFORGE_TOKEN', cfToken)
+def validateMr = registerValidation('validateModrinthPublishing', 'Modrinth', mrProjectId, 'MODRINTH_TOKEN', mrToken)
+def configuredValidations = []
+if (cfProjectId) configuredValidations.add(validateCf)
+if (mrProjectId) configuredValidations.add(validateMr)
+def validateAll = tasks.register('validateModPublishing') {
+    dependsOn validateMetadata, configuredValidations
+}
+
+// 离线预览；不调用平台 API，也不输出 token。
+def jarFile = mainJar.flatMap { it.archiveFile }
+def preview = tasks.register('previewModPublishing') {
+    group = 'publishing'
+    description = '构建 JAR 并预览 CurseForge / Modrinth 发布配置，不上传。'
+    dependsOn validateMetadata, mainJar
+    doLast {
+        logger.lifecycle("发布文件: ${jarFile.get().asFile}")
+        logger.lifecycle("版本: ${publishName} (${releaseType})")
+        logger.lifecycle("Minecraft: ${publishGameVersions.join(', ')}; Loader: NeoForge; Java: 21; 环境: Client / Server")
+        if (cfProjectId) {
+            logger.lifecycle("CurseForge: ${cfProjectId}; 必需: ${cfRequires}; 可选: ${cfOptional}")
+        }
+        if (mrProjectId) {
+            logger.lifecycle("Modrinth: ${mrProjectId}; 必需: ${mrRequires}; 可选: ${mrOptional}")
+        }
+        logger.lifecycle("更新说明:\n${publishChangelog}")
+        logger.lifecycle('预览完成，未上传任何文件。')
+    }
+}
+
+// apply 脚本从插件自己的 classLoader 取得任务类，与参考项目保持一致。
+def cfPlugin = plugins.findPlugin('net.darkhax.curseforgegradle')
+def cfTaskClass = cfPlugin.class.classLoader.loadClass('net.darkhax.curseforgegradle.TaskPublishCurseForge')
+def cfTask = tasks.register('publishCurseforge', cfTaskClass) {
+    group = 'publishing'
+    description = '构建并上传 JAR 到 CurseForge。'
+    dependsOn validateCf, mainJar
+    mustRunAfter validateAll
+    notCompatibleWithConfigurationCache('CurseForgeGradle 发布任务在执行时访问 Project；发布命令请使用 --no-configuration-cache。')
+    apiToken = cfToken
+    onlyIf('publish_dry_run 仅预览，不上传') { !dryRun }
+    if (cfProjectId) {
+        def artifact = upload(cfProjectId, mainJar.get())
+        artifact.displayName = publishName
+        artifact.changelog = publishChangelog
+        artifact.changelogType = 'markdown'
+        artifact.releaseType = releaseType
+        artifact.addGameVersion(*publishGameVersions)
+        artifact.addModLoader('NeoForge')
+        artifact.addEnvironment('Client', 'Server')
+        artifact.addJavaVersion('Java 21')
+        cfRequires.each { artifact.addRequirement(it) }
+        cfOptional.each { artifact.addOptional(it) }
+    }
+}
+
+modrinth {
+    if (mrToken) token = mrToken
+    if (mrProjectId) projectId = mrProjectId
+    versionNumber = publishVersion
+    versionName = publishName
+    versionType = releaseType
+    uploadFile = mainJar.get()
+    gameVersions = publishGameVersions
+    loaders = ['neoforge']
+    changelog = publishChangelog
+    dependencies {
+        mrRequires.each { required.project it }
+        mrOptional.each { optional.project it }
+    }
+}
+def mrTask = tasks.named('modrinth') {
+    group = 'publishing'
+    description = '构建并上传 JAR 到 Modrinth。'
+    dependsOn validateMr, mainJar
+    mustRunAfter validateAll
+    notCompatibleWithConfigurationCache('Minotaur 发布任务在执行时访问 Project；发布命令请使用 --no-configuration-cache。')
+    onlyIf('publish_dry_run 仅预览，不上传') { !dryRun }
+}
+
+// 支持仅配置一个平台；配置两个平台时先统一验证，再执行上传。
+tasks.register('publishMods') {
+    group = 'publishing'
+    description = '一键构建并上传至已配置的 CurseForge / Modrinth。'
+    dependsOn validateAll
+    if (cfProjectId) dependsOn cfTask
+    if (mrProjectId) dependsOn mrTask
+}
+// 为单平台上传命令也提供同样的试运行开关。
+if (dryRun) {
+    cfTask.configure { dependsOn preview }
+    mrTask.configure { dependsOn preview }
+}

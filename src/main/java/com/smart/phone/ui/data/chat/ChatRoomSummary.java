@@ -33,8 +33,10 @@ public class ChatRoomSummary implements IPersistedSerializable {
         this.roomId = room.getRoomId();
         this.displayNameKey = room.getDisplayNameKey();
         this.messageCount = room.getMessages().size();
-        room.latestMessage().ifPresent(message -> {
-            this.latestPreview = message.getBody();
+        room.getMessages().stream().filter(message -> !message.getBody().isBlank()
+                || (message.getImageData() != null && message.getImageData().length > 0))
+                .max(java.util.Comparator.comparingLong(ChatRoomMessage::getCreatedAtMillis)).ifPresent(message -> {
+            this.latestPreview = message.getBody().isBlank() ? "[image]" : message.getBody();
             this.latestAtMillis = message.getCreatedAtMillis();
         });
     }

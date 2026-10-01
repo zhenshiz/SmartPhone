@@ -6,7 +6,6 @@ import com.lowdragmc.lowdraglib2.gui.ui.data.TextWrap;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.layout.LayoutProperties;
 import com.lowdragmc.lowdraglib2.gui.ui.style.PropertyRegistry;
-import com.lowdragmc.lowdraglib2.gui.ui.styletemplate.Sprites;
 import dev.vfyjxf.taffy.style.AlignItems;
 import dev.vfyjxf.taffy.style.TaffyDimension;
 import dev.vfyjxf.taffy.style.TaffyPosition;
@@ -24,7 +23,6 @@ public class Toast extends UIElement {
         });
 
         this.style(style -> {
-            style.backgroundTexture(Sprites.RECT_DARK);
             style.opacity(0f);
         });
 
@@ -48,6 +46,7 @@ public class Toast extends UIElement {
                 .height(1)
                 .widthPercent(0) // 初始宽度 0
         );
+        addClass("phone_toast");
         progressBar.style(style -> style.backgroundTexture(ColorPattern.GREEN.rectTexture()));
         this.addChild(progressBar);
 

@@ -42,6 +42,8 @@ public class PianoTilesUI extends AppUI {
     private float currentSpeed = 0;
     private boolean gameStarted = false;
     private boolean gameOver = false;
+    private Row failedRow;
+    private int failedLane = -1;
     private int score = 0;
     private final Random random = new Random();
 
@@ -85,16 +87,17 @@ public class PianoTilesUI extends AppUI {
         });
 
         gameCanvas = new GameCanvas();
+        gameCanvas.setId("piano_tiles_canvas");
 
         // 核心交互
         gameCanvas.addEventListener(UIEvents.CLICK, event -> {
-            if (gameOver) return;
-            float localX = event.x - gameCanvas.getPositionX();
-            float localY = event.y - gameCanvas.getPositionY();
-            handleTap(localX, localY);
+            if (gameOver || event.button != 0) return;
+            var localMouse = gameCanvas.getLocalMouse(event.x, event.y);
+            handleTap(localMouse.x - gameCanvas.getPositionX(), localMouse.y - gameCanvas.getPositionY());
         });
 
         restartButton = new Button();
+        restartButton.setId("piano_tiles_restart");
         restartButton.setText("smartPhone.ui.app.game.resetGame");
         restartButton.textStyle(s -> s.fontSize(6).adaptiveWidth(true));
         restartButton.addEventListener(UIEvents.CLICK, e -> initGame());
@@ -151,6 +154,8 @@ public class PianoTilesUI extends AppUI {
         currentSpeed = INITIAL_SPEED;
         gameStarted = false;
         gameOver = false;
+        failedRow = null;
+        failedLane = -1;
 
         float startY = GAME_HEIGHT - TILE_HEIGHT;
 
@@ -176,26 +181,14 @@ public class PianoTilesUI extends AppUI {
         if (lane < 0 || lane >= LANE_COUNT) return;
 
         if (rows.isEmpty()) return;
-        Row targetRow = rows.getFirst();
-
-        // 判定 Y 轴点击有效范围
-        boolean yHit = y >= targetRow.y && y <= targetRow.y + TILE_HEIGHT;
-
-        if (yHit) {
-            if (lane == targetRow.blackLane) {
-                onCorrectTap(targetRow);
+        for (Row row : rows) {
+            if (y < row.y || y >= row.y + TILE_HEIGHT) continue;
+            if (lane == row.blackLane) {
+                if (row == rows.getFirst()) onCorrectTap(row);
             } else {
-                setGameOver();
+                setGameOver(row, lane);
             }
-        } else {
-            // 防误触：点到了上面的黑块判输
-            for (int i = 1; i < rows.size(); i++) {
-                Row r = rows.get(i);
-                if (y >= r.y && y <= r.y + TILE_HEIGHT && lane == r.blackLane) {
-                    setGameOver();
-                    return;
-                }
-            }
+            return;
         }
     }
 
@@ -224,21 +217,21 @@ public class PianoTilesUI extends AppUI {
     public void screenTick() {
         super.screenTick();
         if (gameStarted && !gameOver) {
+            Row bottomRow = rows.getFirst();
+            float advance = Math.min(currentSpeed, Math.max(0, GAME_HEIGHT - TILE_HEIGHT - bottomRow.y));
             for (Row row : rows) {
-                row.y += currentSpeed;
+                row.y += advance;
             }
-
-            if (!rows.isEmpty()) {
-                Row bottomRow = rows.getFirst();
-                if (bottomRow.y > GAME_HEIGHT) {
-                    setGameOver(); // 漏过去了
-                }
+            if (bottomRow.y + TILE_HEIGHT >= GAME_HEIGHT) {
+                setGameOver(bottomRow, bottomRow.blackLane);
             }
         }
     }
 
-    private void setGameOver() {
+    private void setGameOver(Row row, int lane) {
         gameOver = true;
+        failedRow = row;
+        failedLane = lane;
         updateInfo();
         restartButton.setVisible(true);
     }
@@ -282,12 +275,17 @@ public class PianoTilesUI extends AppUI {
                 int pw = LANE_WIDTH;
 
                 int color = row.isStartRow ? COL_START : COL_BLACK;
-                if (gameOver && row == rows.getFirst()) {
+                if (row == failedRow && row.blackLane == failedLane) {
                     color = COL_FAIL_RED;
                 }
 
                 // 画黑块
                 graphics.fill(px, py, px + pw, py + ph, color);
+
+                if (row == failedRow && row.blackLane != failedLane) {
+                    int failedX = startX + failedLane * LANE_WIDTH;
+                    graphics.fill(failedX, py, failedX + LANE_WIDTH, py + ph, COL_FAIL_RED);
+                }
 
                 // 画底部横线
                 graphics.fill(startX, py + ph - 1, startX + GAME_WIDTH, py + ph, COL_LINE);

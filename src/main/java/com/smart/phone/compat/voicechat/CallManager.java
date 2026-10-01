@@ -70,7 +70,11 @@ public class CallManager {
         playerToSession.put(callee.getUUID(), sessionId);
 
         RPCPacketDistributor.rpcToPlayer(caller, S2CPayload.CALL_RINGING, sessionId, callee.getUUID(), session.getCalleeName());
-        RPCPacketDistributor.rpcToPlayer(callee, S2CPayload.CALL_INCOMING, SmartPhone.getPhoneSavedData().getPhoneInfo(callee), sessionId, caller.getUUID(), session.getCallerName());
+        if (com.smart.phone.security.PhoneSecurityServer.enabled(callee.getUUID())
+                || com.smart.phone.security.PhoneSecurityServer.blocked(callee.getUUID())) {
+            com.smart.phone.security.PhoneSecurityServer.open(callee, callee.getUUID(), false);
+        }
+        RPCPacketDistributor.rpcToPlayer(callee, S2CPayload.CALL_INCOMING, com.smart.phone.security.PhoneSecurityServer.snapshot(callee, callee.getUUID()), sessionId, caller.getUUID(), session.getCallerName());
         broadcastStatus();
     }
 

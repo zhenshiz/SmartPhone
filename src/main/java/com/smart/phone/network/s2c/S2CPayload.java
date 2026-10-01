@@ -14,7 +14,8 @@ import com.smart.phone.util.SmartPhoneClientUtil;
 public class S2CPayload {
     private static final String MOD_ID = SmartPhone.MOD_ID + ":";
     public static final String OPEN_PHONE = MOD_ID + "open_phone";
-    public static final String OPEN_SETTING = MOD_ID + "open_setting";
+    public static final String OPEN_HELD_PHONE = MOD_ID + "open_held_phone";
+    public static final String OPEN_HELD_PHONE_REJECTED = MOD_ID + "open_held_phone_rejected";
     public static final String CALL_INCOMING = MOD_ID + "call_incoming";
     public static final String CALL_RINGING = MOD_ID + "call_ringing";
     public static final String CALL_CONNECTED = MOD_ID + "call_connected";
@@ -28,14 +29,51 @@ public class S2CPayload {
     public static final String FRIEND_LIST_UPDATE = MOD_ID + "friend_list_update";
     public static final String FRIEND_TOAST = MOD_ID + "friend_toast";
 
-    @RPCPacket(OPEN_PHONE)
-    public static void openPhone(RPCSender sender, PhoneInfo phoneInfo) {
-        SmartPhoneClientUtil.openPhone(phoneInfo);
+    public static final String OPEN_PHONE_EDITOR = MOD_ID + "open_phone_editor";
+    public static final String PHONE_EDITOR_RESULT = MOD_ID + "phone_editor_result";
+    public static final String PHONE_INFO_UPDATED = MOD_ID + "phone_info_updated";
+
+    public static final String PHONE_SECURITY_RESULT = MOD_ID + "phone_security_result";
+
+    @RPCPacket(PHONE_SECURITY_RESULT)
+    public static void phoneSecurityResult(RPCSender sender, java.util.UUID token, String action, boolean success,
+                                           boolean enabled, PhoneInfo info, String error) {
+        SmartPhoneClientUtil.receivePhoneSecurity(token, action, success, enabled, info, error);
     }
 
-    @RPCPacket(OPEN_SETTING)
-    public static void openSetting(RPCSender sender, PhoneInfo phoneInfo) {
-        SmartPhoneClientUtil.openSetting(phoneInfo);
+    @RPCPacket(OPEN_PHONE_EDITOR)
+    public static void openPhoneEditor(RPCSender sender, java.util.UUID owner, String name,
+                                       java.util.UUID session, PhoneInfo draft, boolean passcodeEnabled) {
+        com.smart.phone.ui.editor.PhoneEditorUI.open(owner, name, session, draft, passcodeEnabled);
+    }
+
+    @RPCPacket(PHONE_EDITOR_RESULT)
+    public static void phoneEditorResult(RPCSender sender, java.util.UUID session, boolean success) {
+        com.smart.phone.ui.editor.PhoneEditorUI.receiveResult(session, success);
+    }
+
+    @RPCPacket(PHONE_INFO_UPDATED)
+    public static void phoneInfoUpdated(RPCSender sender, java.util.UUID owner, PhoneInfo info) {
+        SmartPhoneClientUtil.refreshPhoneInfo(owner, info);
+    }
+
+    @RPCPacket(OPEN_PHONE)
+    public static void openPhone(RPCSender sender, java.util.UUID ownerUuid, PhoneInfo phoneInfo, java.util.UUID token, boolean enabled, boolean locked, String ownerName) {
+        SmartPhoneClientUtil.openPhone(ownerUuid, phoneInfo);
+        SmartPhoneClientUtil.setPhoneOwnerName(ownerUuid, ownerName);
+        SmartPhoneClientUtil.configurePhoneAccess(token, enabled, locked);
+    }
+
+    @RPCPacket(OPEN_HELD_PHONE)
+    public static void openHeldPhone(RPCSender sender, java.util.UUID ownerUuid, PhoneInfo phoneInfo, java.util.UUID token, boolean enabled, boolean locked, String ownerName) {
+        SmartPhoneClientUtil.openHeldPhone(ownerUuid, phoneInfo);
+        SmartPhoneClientUtil.setPhoneOwnerName(ownerUuid, ownerName);
+        SmartPhoneClientUtil.configurePhoneAccess(token, enabled, locked);
+    }
+
+    @RPCPacket(OPEN_HELD_PHONE_REJECTED)
+    public static void openHeldPhoneRejected(RPCSender sender) {
+        SmartPhoneClientUtil.closeRejectedHeldPhone();
     }
 
     @RPCPacket(CALL_INCOMING)

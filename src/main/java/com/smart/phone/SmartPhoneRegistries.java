@@ -4,8 +4,12 @@ import com.lowdragmc.lowdraglib2.registry.AutoRegistry;
 import com.smart.phone.ui.app.IApp;
 import com.smart.phone.ui.data.IPhoneInfoData;
 import com.smart.phone.ui.time.IPhoneTimeSource;
+import com.mojang.serialization.Codec;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
@@ -15,6 +19,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -27,7 +32,18 @@ public class SmartPhoneRegistries {
 
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(SmartPhone.MOD_ID);
 
-    public static DeferredItem<Item> PHONE = ITEMS.register("phone", () -> new PhoneItem(new Item.Properties()));
+    public static final DeferredRegister.DataComponents DATA_COMPONENTS =
+            DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, SmartPhone.MOD_ID);
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<UUID>> PHONE_OWNER =
+            DATA_COMPONENTS.registerComponentType("phone_owner", builder ->
+                    builder.persistent(com.smart.phone.util.PhoneOwnerResolver.COMPONENT_CODEC).networkSynchronized(UUIDUtil.STREAM_CODEC));
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> PHONE_OWNER_NAME =
+            DATA_COMPONENTS.registerComponentType("phone_owner_name", builder ->
+                    builder.persistent(Codec.STRING).networkSynchronized(ByteBufCodecs.STRING_UTF8));
+
+    public static DeferredItem<Item> PHONE = ITEMS.register("phone", () -> new PhoneItem(new Item.Properties().stacksTo(1)));
 
     public static DeferredRegister<CreativeModeTab> CREATIVE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, SmartPhone.MOD_ID);
 

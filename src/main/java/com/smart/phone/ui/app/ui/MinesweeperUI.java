@@ -76,13 +76,15 @@ public class MinesweeperUI extends AppUI {
         });
 
         gameCanvas = new MineCanvas();
+        gameCanvas.setId("minesweeper_canvas");
         // 核心交互：监听点击
         gameCanvas.addEventListener(UIEvents.CLICK, event -> {
             if (gameOver || gameWon) return;
 
             // 计算点击的是哪个格子
-            float localX = event.x - gameCanvas.getPositionX();
-            float localY = event.y - gameCanvas.getPositionY();
+            var localMouse = gameCanvas.getLocalMouse(event.x, event.y);
+            float localX = localMouse.x - gameCanvas.getPositionX();
+            float localY = localMouse.y - gameCanvas.getPositionY();
 
             int col = (int) (localX / (CELL_SIZE + MARGIN));
             int row = (int) (localY / (CELL_SIZE + MARGIN));
@@ -97,6 +99,7 @@ public class MinesweeperUI extends AppUI {
         });
 
         restartButton = new Button();
+        restartButton.setId("minesweeper_restart");
         restartButton.setText("smartPhone.ui.app.game.resetGame");
         restartButton.textStyle(s -> s.fontSize(6));
         restartButton.addEventListener(UIEvents.CLICK, e -> initGame());

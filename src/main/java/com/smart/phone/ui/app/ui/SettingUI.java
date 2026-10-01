@@ -41,5 +41,24 @@ public class SettingUI extends AppUI {
         appScrollView.viewContainer.addChildren(new PlayerHeadElement(16),
                 new Label().setText(minecraft.player.getDisplayName()).textStyle(textStyle -> textStyle.adaptiveWidth(true).adaptiveHeight(true).fontSize(6)).layout(layout -> layout.marginAll(2)),
                 group);
+        var phone = homeScreen.getPhoneUI();
+        if (!phone.isPreview() && phone.getAccessToken() != null) {
+            var change = new com.lowdragmc.lowdraglib2.gui.ui.elements.Button().setText(phone.isPasscodeEnabled()
+                    ? "smartPhone.security.change" : "smartPhone.security.enable");
+            change.setId("phone_passcode_setting");
+            change.layout(l -> l.widthPercent(94).height(15).marginTop(6));
+            change.textStyle(t -> t.fontSize(5));
+            change.setOnClick(e -> phone.showPasscode(phone.isPasscodeEnabled()
+                    ? com.smart.phone.ui.view.PasscodeView.Mode.CHANGE : com.smart.phone.ui.view.PasscodeView.Mode.SET));
+            appScrollView.viewContainer.addChild(change);
+            if (phone.isPasscodeEnabled()) {
+                var disable = new com.lowdragmc.lowdraglib2.gui.ui.elements.Button().setText("smartPhone.security.disable");
+                disable.setId("phone_passcode_disable");
+                disable.layout(l -> l.widthPercent(94).height(15).marginTop(3));
+                disable.textStyle(t -> t.fontSize(5));
+                disable.setOnClick(e -> phone.showPasscode(com.smart.phone.ui.view.PasscodeView.Mode.DISABLE));
+                appScrollView.viewContainer.addChild(disable);
+            }
+        }
     }
 }

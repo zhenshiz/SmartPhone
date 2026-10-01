@@ -29,6 +29,8 @@ public class ChatRoomMessage implements IPersistedSerializable {
     @Persisted
     private String senderName = "";
     @Persisted
+    private String avatarPlayerName = "";
+    @Persisted
     private String body = "";
     // 图片消息的缩略图 PNG 数据，文本消息为 null
     @Persisted

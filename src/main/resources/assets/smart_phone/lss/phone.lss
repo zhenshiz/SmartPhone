@@ -1,0 +1,42 @@
+.phone_app, .phone_panel {
+  background: built-in(ui-ore:RECT);
+}
+.phone_row, .phone_bubble {
+  background: built-in(ui-ore:RECT2);
+}
+.phone_row:hovered {
+  background: built-in(ui-ore:BTN_RECT_HOVER);
+}
+.phone_bubble_self, .phone_badge {
+  background: built-in(ui-ore:BTN_DEFAULT_SMALL_GREEN);
+}
+.phone_selected_message > .phone_bubble, .phone_selected_message > .phone_bubble_self {
+  overlay: built-in(ui-ore:WHITE_BORDER);
+}
+.phone_toast {
+  background: built-in(ui-ore:BORDER_7);
+}
+.phone_app button:host {
+  padding-all: 1;
+  padding-bottom: 2;
+}
+.phone_app button:host .__button_text__ {
+  text-shadow: false;
+}
+
+.phone_selected_official_message {
+  overlay: built-in(ui-ore:WHITE_BORDER);
+}
+
+.photo_edit_selected {
+  overlay: built-in(ui-ore:WHITE_BORDER);
+}
+
+#phone_passcode button:host {
+  padding-all: 0;
+  padding-bottom: 0;
+}
+#phone_passcode button:host .__button_text__ {
+  color: #fff;
+  text-shadow: false;
+}

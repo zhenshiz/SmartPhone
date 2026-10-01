@@ -26,6 +26,11 @@ public class ChatRoom implements IPersistedSerializable {
     private String roomId = "";
     @Persisted
     private String displayNameKey = "";
+    /** Authored friend ID; it need not resolve to a real server player. */
+    @Persisted
+    private String presetFriendId = "";
+    @Persisted
+    private boolean presetFriend;
     @Persisted
     private List<ChatRoomMessage> messages = new ArrayList<>();
 
@@ -48,4 +53,5 @@ public class ChatRoom implements IPersistedSerializable {
         if (messages.isEmpty()) return Optional.empty();
         return Optional.of(messages.getLast());
     }
+
 }

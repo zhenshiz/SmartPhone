@@ -20,7 +20,7 @@ public class ChatRoomApp extends IApp {
 
     @Override
     public IGuiTexture getIcon() {
-        return SpriteTexture.of(SmartPhone.formattedMod("textures/ui/app/notepad.png"));
+        return SpriteTexture.of(SmartPhone.formattedMod("textures/ui/app/chat_room.png"));
     }
 
     @Override

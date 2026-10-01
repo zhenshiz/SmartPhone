@@ -34,10 +34,12 @@ public class SmartPhone {
 
     public SmartPhone(IEventBus modEventBus, ModContainer modContainer, Dist dist) {
         SmartPhoneRegistries.ITEMS.register(modEventBus);
+        SmartPhoneRegistries.DATA_COMPONENTS.register(modEventBus);
         SmartPhoneRegistries.CREATIVE_TABS.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.CONFIG_SPEC, "%s_config.toml".formatted(MOD_ID));
         if (dist == Dist.CLIENT) {
+            modContainer.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CONFIG_SPEC, "smart_phone_client.toml");
             modContainer.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
         }
     }

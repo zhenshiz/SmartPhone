@@ -1,6 +1,7 @@
 package com.smart.phone.ui.app;
 
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
 import com.smart.phone.SmartPhone;
@@ -19,7 +20,7 @@ public class CameraApp extends IApp {
 
     @Override
     public IGuiTexture getIcon() {
-        return PhoneAppIconTextures.camera();
+        return SpriteTexture.of(SmartPhone.formattedMod("textures/ui/app/camera.png"));
     }
 
     @Override

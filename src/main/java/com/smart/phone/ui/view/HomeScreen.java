@@ -66,14 +66,7 @@ public class HomeScreen extends UIElement {
             layout.height(1);
             layout.widthPercent(50);
         }).style(style -> style.backgroundTexture(new ColorRectTexture(ColorPattern.BLACK.color))).addEventListener(UIEvents.CLICK, event -> {
-            if (this.appUI != null) {
-                this.iApp.onClose(appUI);
-                this.removeChild(appUI);
-                this.appUI = null;
-                this.iApp = null;
-
-                appScrollView.viewContainer.setVisible(true);
-            }
+            closeApp();
         }));
 
         appScrollView.layout(layout -> {
@@ -112,6 +105,7 @@ public class HomeScreen extends UIElement {
             UIElement iconBackground = new UIElement().layout(layout -> {
                 layout.width(12).height(12).marginBottom(2).justifyContent(AlignContent.CENTER).alignItems(AlignItems.CENTER);
             }).style(style -> style.backgroundTexture(iApp.getIcon()));
+            iconBackground.setId("phone_app_" + iApp.name().replaceAll("[^a-zA-Z0-9_-]", "_"));
 
             iconBackground.addEventListener(UIEvents.MOUSE_DOWN, event -> {
                 if (event.button == 0) {
@@ -185,7 +179,23 @@ public class HomeScreen extends UIElement {
         }
     }
 
+    public void closeApp() {
+        if (appUI == null) return;
+        iApp.onClose(appUI);
+        removeChild(appUI);
+        appUI = null;
+        iApp = null;
+        appScrollView.viewContainer.setVisible(true);
+    }
+
     public void openApp(IApp iApp) {
+        if (phoneUI.isAccessLocked()) return;
+        if (phoneUI.isPreview() && (iApp instanceof com.smart.phone.ui.app.PhoneCall
+                || iApp instanceof com.smart.phone.ui.app.CameraApp
+                || iApp instanceof com.smart.phone.ui.app.PhotoAlbumApp)) {
+            Toast.show(this, Component.translatable("smartPhone.editor.previewUnavailable"), 2f);
+            return;
+        }
         if (this.appUI != null) {
             this.iApp.onClose(appUI);
             this.removeChild(appUI);
@@ -211,7 +221,7 @@ public class HomeScreen extends UIElement {
     }
 
     public void savePhoneData() {
-        SmartPhoneClientUtil.setPhoneInfoByPlayer(this.phoneUI.phoneInfo);
+        phoneUI.savePhoneData();
     }
 
     public IGuiTexture createCombinedIcon(IGuiTexture background, IGuiTexture icon, float iconScale) {

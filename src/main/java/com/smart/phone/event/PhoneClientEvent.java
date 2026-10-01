@@ -1,7 +1,10 @@
 package com.smart.phone.event;
 
 import com.smart.phone.SmartPhone;
+import com.smart.phone.client.HeldPhoneClient;
+import com.smart.phone.client.HeldPhoneHandRenderer;
 import com.smart.phone.client.camera.PhoneCameraClient;
+import com.smart.phone.client.camera.PhoneCameraHud;
 import com.smart.phone.client.message.PhoneMessageClientState;
 import com.smart.phone.ui.data.OfficialMessage;
 import net.minecraft.client.Minecraft;
@@ -15,12 +18,16 @@ import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
 
 @EventBusSubscriber(modid = SmartPhone.MOD_ID, value = Dist.CLIENT)
 public class PhoneClientEvent {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         PhoneCameraClient.tick();
+        HeldPhoneClient.tick();
+        com.smart.phone.util.SmartPhoneClientUtil.tickPhoneAccess();
     }
 
     @SubscribeEvent
@@ -29,21 +36,27 @@ public class PhoneClientEvent {
     }
 
     @SubscribeEvent
-    public static void onRenderGuiPre(RenderGuiEvent.Pre event) {
-        if (PhoneCameraClient.renderCameraOverlay(event.getGuiGraphics())) {
+    public static void onRenderGuiLayer(RenderGuiLayerEvent.Pre event) {
+        if (PhoneCameraClient.isCameraActive() && !PhoneCameraHud.ID.equals(event.getName())) {
             event.setCanceled(true);
         }
     }
 
     @SubscribeEvent
+    public static void onScreenOpening(ScreenEvent.Opening event) {
+        PhoneCameraClient.handleScreenOpening(event);
+    }
+
+    @SubscribeEvent
     public static void onRenderHand(RenderHandEvent event) {
-        if (PhoneCameraClient.shouldHideFirstPersonHand()) {
+        if (PhoneCameraClient.shouldHideFirstPersonHand() || HeldPhoneHandRenderer.render(event)) {
             event.setCanceled(true);
         }
     }
 
     @SubscribeEvent
     public static void onRenderGui(RenderGuiEvent.Post event) {
+        if (PhoneCameraClient.isCameraActive()) return;
         if (!PhoneMessageClientState.hasVisibleNotification()) return;
         OfficialMessage message = PhoneMessageClientState.getNotification();
         if (message == null) return;

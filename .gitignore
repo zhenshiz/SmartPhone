@@ -29,4 +29,6 @@ build
 run
 .gradle-user-home
 repo
-doc
+
+# Local publishing credentials
+publish.env

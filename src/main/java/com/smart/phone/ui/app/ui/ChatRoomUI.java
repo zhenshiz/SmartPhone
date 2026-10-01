@@ -10,12 +10,15 @@ import com.lowdragmc.lowdraglib2.gui.ui.data.TextWrap;
 import com.lowdragmc.lowdraglib2.gui.ui.data.Vertical;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.TextArea;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.smart.phone.client.camera.PhonePhoto;
 import com.smart.phone.client.camera.PhonePhotoAlbum;
 import com.smart.phone.client.chat.PhoneChatClientState;
 import com.smart.phone.ui.components.Toast;
+import com.smart.phone.ui.components.PlayerHeadElement;
+import com.smart.phone.ui.data.PresetChatsData;
+import com.smart.phone.ui.data.chat.ChatRoom;
 import com.smart.phone.ui.data.chat.ChatRoomMessage;
 import com.smart.phone.ui.data.chat.ChatRoomSavedData;
 import com.smart.phone.ui.data.chat.ChatRoomSnapshot;
@@ -34,9 +37,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Objects;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class ChatRoomUI extends AppUI {
     private static final int LIST_MODE_ROOMS = 0;
@@ -44,24 +51,24 @@ public class ChatRoomUI extends AppUI {
     private static final ZoneId MESSAGE_ZONE = ZoneId.systemDefault();
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM-dd").withZone(MESSAGE_ZONE);
     private static final DateTimeFormatter CLOCK_FORMATTER = DateTimeFormatter.ofPattern("HH:mm").withZone(MESSAGE_ZONE);
-    private static final int ROW_BACKGROUND = 0x22000000;
-    private static final int BUBBLE_SELF = 0x55307752;
-    private static final int BUBBLE_OTHER = 0x442F2A38;
-    private static final int TEXT_SECONDARY = 0xFFAAA3B6;
+    private static final int TEXT_SECONDARY = 0xFFCCCCCC;
 
     private final UIElement inputBar;
-    private final TextArea inputArea;
+    private final TextField inputArea;
     private int lastVersion = -1;
     private int listMode = LIST_MODE_ROOMS;
     private String selectedRoomId;
+    private UUID selectedMessageId;
     private String draftText = "";
     private boolean showingPhotoPicker;
+    private Consumer<byte[]> previewPhotoSelection;
 
     public ChatRoomUI(HomeScreen homeScreen) {
         super(homeScreen);
         appScrollView.layout(layout -> {
             layout.widthPercent(100);
             layout.flex(1);
+            layout.minHeight(0);
         });
         appScrollView.viewContainer.layout(layout -> {
             layout.flexDirection(FlexDirection.COLUMN);
@@ -72,20 +79,32 @@ public class ChatRoomUI extends AppUI {
             layout.gapAll(1);
         });
 
-        inputArea = new TextArea();
-        inputArea.textAreaStyle(style -> {
+        inputArea = new TextField() {
+            @Override
+            public String name() { return "text-field"; }
+
+            @Override
+            public void insertText(String text) {
+                super.insertText(text.replace("\r\n", " ").replace('\r', ' ').replace('\n', ' '));
+            }
+        };
+        inputArea.setId("chat_room_input");
+        inputArea.textFieldStyle(style -> {
             style.fontSize(4.5f);
             style.placeholder(Component.translatable("smartPhone.ui.app.chatRoom.input"));
         }).layout(layout -> {
             layout.flex(1);
-            layout.height(16);
+            layout.minWidth(0);
+            layout.height(12);
             layout.paddingAll(2);
+            layout.paddingTop(2);
         });
-        inputArea.setLinesResponder(lines -> draftText = String.join("\n", lines));
+        inputArea.setTextResponder(text -> draftText = text);
 
         inputBar = new UIElement().layout(layout -> {
             layout.widthPercent(98);
             layout.height(20);
+            layout.flexShrink(0);
             layout.marginBottom(5);
             layout.flexDirection(FlexDirection.ROW);
             layout.alignItems(AlignItems.CENTER);
@@ -101,13 +120,18 @@ public class ChatRoomUI extends AppUI {
         });
 
         showRoomList();
-        SmartPhoneClientUtil.requestChatRooms();
-        SmartPhoneClientUtil.requestFriendList();
+        if (!homeScreen.getPhoneUI().isPreview()) {
+            SmartPhoneClientUtil.requestChatRooms();
+            SmartPhoneClientUtil.requestFriendList();
+        }
     }
 
     public void refreshFromState() {
         lastVersion = PhoneChatClientState.getVersion();
         if (showingPhotoPicker) return;
+        if (selectedRoomId != null && selectedRoomId.startsWith("preset:") && selectedPreset() == null) {
+            selectedRoomId = null;
+        }
         if (selectedRoomId == null) {
             showRoomList();
         } else {
@@ -115,18 +139,55 @@ public class ChatRoomUI extends AppUI {
         }
     }
 
+    private List<ChatRoom> presetRooms() {
+        return homeScreen.getPhoneUI().phoneInfo.findExtensionData(PresetChatsData.class)
+                .map(PresetChatsData::getRooms).orElse(List.of());
+    }
+
+    private ChatRoom selectedPreset() {
+        return presetRooms().stream().filter(room -> room.getRoomId().equals(selectedRoomId)).findFirst().orElse(null);
+    }
+
+    public void selectPreviewMessage(UUID messageId) {
+        selectedMessageId = messageId;
+        select(".phone_selected_message").forEach(element -> element.removeClass("phone_selected_message"));
+        if (messageId != null) select("#chat_message_" + messageId).forEach(element -> element.addClass("phone_selected_message"));
+    }
+
+    public void showPresetRoom(String roomId) {
+        selectedRoomId = roomId;
+        showingPhotoPicker = false;
+        previewPhotoSelection = null;
+        listMode = selectedPreset() != null && selectedPreset().isPresetFriend() ? LIST_MODE_FRIENDS : LIST_MODE_ROOMS;
+        refreshFromState();
+    }
+
+    public void showPresetFriends() {
+        listMode = LIST_MODE_FRIENDS;
+        showRoomList();
+    }
+
     private void showRoomList() {
         selectedRoomId = null;
         inputBar.setVisible(false);
+        inputBar.setDisplay(true);
         appScrollView.clearAllScrollViewChildren();
         appScrollView.viewContainer.addChildren(createTabBar());
         if (listMode == LIST_MODE_FRIENDS) {
             showFriendRows();
             return;
         }
-        List<ChatRoomSummary> rooms = PhoneChatClientState.getRooms();
+        List<ChatRoomSummary> rooms = new ArrayList<>();
+        for (var preset : presetRooms()) {
+            if (preset.isPresetFriend()) continue;
+            ChatRoomSummary summary = new ChatRoomSummary(preset);
+            summary.setDisplayName(preset.getDisplayNameKey());
+            rooms.add(summary);
+        }
+        if (!homeScreen.getPhoneUI().isPreview()) rooms.addAll(PhoneChatClientState.getRooms());
         if (rooms.isEmpty()) {
-            appScrollView.viewContainer.addChildren(createLabel(Component.translatable("smartPhone.ui.app.chatRoom.loading"), 6, ColorPattern.T_WHITE.color, 14, Horizontal.CENTER));
+            appScrollView.viewContainer.addChildren(createLabel(Component.translatable(homeScreen.getPhoneUI().isPreview()
+                    ? "smartPhone.editor.noPresetChats" : "smartPhone.ui.app.chatRoom.loading"), 6, ColorPattern.T_WHITE.color, 14, Horizontal.CENTER));
             return;
         }
         rooms.forEach(room -> appScrollView.viewContainer.addChildren(createRoomRow(room)));
@@ -141,7 +202,7 @@ public class ChatRoomUI extends AppUI {
             layout.paddingHorizontal(3);
             layout.paddingVertical(2);
             layout.gapAll(3);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(ROW_BACKGROUND)));
+        }).addClass("phone_row");
         row.setId("chat_room_" + safeSelectorId(room.getRoomId()));
 
         UIElement icon = new UIElement().layout(layout -> {
@@ -149,7 +210,7 @@ public class ChatRoomUI extends AppUI {
             layout.height(14);
             layout.justifyContent(AlignContent.CENTER);
             layout.alignItems(AlignItems.CENTER);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(0xFF3D5D7A)));
+        }).addClass("phone_badge");
         icon.addChildren(createInlineLabel(Component.literal("#"), 7, ColorPattern.WHITE.color, 14, Horizontal.CENTER));
 
         UIElement textColumn = new UIElement().layout(layout -> {
@@ -177,16 +238,36 @@ public class ChatRoomUI extends AppUI {
                 createInlineLabel(Component.literal(clipByVisualWidth(roomPreview(room), 36)), 4.2f, TEXT_SECONDARY, 8, Horizontal.LEFT)
         );
 
-        row.addChildren(icon, textColumn);
+        ChatRoom preset = presetRooms().stream().filter(p -> p.getRoomId().equals(room.getRoomId())).findFirst().orElse(null);
+        row.addChildren(preset != null && preset.isPresetFriend()
+                ? createPresetFriendAvatar(preset) : icon, textColumn);
         row.addEventListener(UIEvents.CLICK, event -> {
             if (event.button != 0) return;
             selectedRoomId = room.getRoomId();
+            if (selectedPreset() != null) {
+                homeScreen.getPhoneUI().selectPreviewChat(selectedRoomId, null);
+                showRoomMessages();
+                return;
+            }
             inputBar.setVisible(true);
             appScrollView.clearAllScrollViewChildren();
             appScrollView.viewContainer.addChildren(createLabel(Component.translatable("smartPhone.ui.app.chatRoom.loading"), 6, ColorPattern.T_WHITE.color, 14, Horizontal.CENTER));
             SmartPhoneClientUtil.openChatRoom(selectedRoomId);
         });
         return row;
+    }
+
+    private PlayerHeadElement createPresetFriendAvatar(ChatRoom preset) {
+        // 列表沿用好友最近一条消息的头像，手机主人的回复不改变好友头像。
+        ChatRoomMessage latestIncoming = preset.getMessages().reversed().stream()
+                .filter(message -> !isOwnMessage(message))
+                .max(Comparator.comparingLong(ChatRoomMessage::getCreatedAtMillis)).orElse(null);
+        PlayerHeadElement avatar = latestIncoming == null
+                ? new PlayerHeadElement(null, preset.getPresetFriendId(), 14)
+                : new PlayerHeadElement(latestIncoming.getSenderUuid(), latestIncoming.getSenderName(),
+                        latestIncoming.getAvatarPlayerName(), 14);
+        avatar.setId("chat_friend_avatar_" + safeSelectorId(preset.getRoomId()));
+        return avatar;
     }
 
     private UIElement createTabBar() {
@@ -201,12 +282,12 @@ public class ChatRoomUI extends AppUI {
         row.addChildren(
                 createTabButton("smartPhone.ui.app.chatRoom.tab.rooms", listMode == LIST_MODE_ROOMS, () -> {
                     listMode = LIST_MODE_ROOMS;
-                    SmartPhoneClientUtil.requestChatRooms();
+                    if (!homeScreen.getPhoneUI().isPreview()) SmartPhoneClientUtil.requestChatRooms();
                     showRoomList();
                 }),
                 createTabButton("smartPhone.ui.app.chatRoom.tab.friends", listMode == LIST_MODE_FRIENDS, () -> {
                     listMode = LIST_MODE_FRIENDS;
-                    SmartPhoneClientUtil.requestFriendList();
+                    if (!homeScreen.getPhoneUI().isPreview()) SmartPhoneClientUtil.requestFriendList();
                     showRoomList();
                 })
         );
@@ -214,7 +295,9 @@ public class ChatRoomUI extends AppUI {
     }
 
     private Button createTabButton(String key, boolean active, Runnable onClick) {
-        Button button = createFlexibleButton(key, active ? 0x553D5D7A : 0x22000000);
+        Button button = createFlexibleButton(key);
+        button.setId(key.endsWith(".friends") ? "chat_room_tab_friends" : "chat_room_tab_rooms");
+        if (active) button.addClass("__confirm-button__");
         button.addEventListener(UIEvents.CLICK, event -> {
             if (event.button != 0) return;
             onClick.run();
@@ -223,8 +306,14 @@ public class ChatRoomUI extends AppUI {
     }
 
     private void showFriendRows() {
-        List<FriendEntry> friends = PhoneChatClientState.getFriends();
-        if (friends.isEmpty()) {
+        var presets = presetRooms().stream().filter(ChatRoom::isPresetFriend).toList();
+        presets.forEach(preset -> {
+            ChatRoomSummary summary = new ChatRoomSummary(preset);
+            summary.setDisplayName(preset.getDisplayNameKey().isBlank() ? preset.getPresetFriendId() : preset.getDisplayNameKey());
+            appScrollView.viewContainer.addChildren(createRoomRow(summary));
+        });
+        List<FriendEntry> friends = homeScreen.getPhoneUI().isPreview() ? List.of() : PhoneChatClientState.getFriends();
+        if (friends.isEmpty() && presets.isEmpty()) {
             appScrollView.viewContainer.addChildren(createLabel(Component.translatable("smartPhone.ui.app.chatRoom.friend.empty"), 6, ColorPattern.T_WHITE.color, 14, Horizontal.CENTER));
             return;
         }
@@ -240,15 +329,9 @@ public class ChatRoomUI extends AppUI {
             layout.paddingHorizontal(3);
             layout.paddingVertical(2);
             layout.gapAll(2);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(ROW_BACKGROUND)));
+        }).addClass("phone_row");
 
-        UIElement icon = new UIElement().layout(layout -> {
-            layout.width(14);
-            layout.height(14);
-            layout.justifyContent(AlignContent.CENTER);
-            layout.alignItems(AlignItems.CENTER);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(friend.isOnline() ? 0xFF2F7D58 : 0xFF3D3946)));
-        icon.addChildren(createInlineLabel(Component.literal(friend.getTargetName().isBlank() ? "?" : friend.getTargetName().substring(0, 1)), 6, ColorPattern.WHITE.color, 14, Horizontal.CENTER));
+        UIElement icon = new PlayerHeadElement(friend.getTargetUuid(), friend.getTargetName(), 14);
 
         UIElement textColumn = new UIElement().layout(layout -> {
             layout.flex(1);
@@ -270,7 +353,7 @@ public class ChatRoomUI extends AppUI {
     private Button createFriendActionButton(FriendEntry friend) {
         String status = friend.getStatus();
         if (FriendStatus.ACCEPTED.equals(status)) {
-            Button button = createCompactButton(friend.isOnline() ? "smartPhone.ui.app.chatRoom.friend.chat" : "smartPhone.ui.app.chatRoom.friend.offline", 24, 0x44307752);
+            Button button = createCompactButton(friend.isOnline() ? "smartPhone.ui.app.chatRoom.friend.chat" : "smartPhone.ui.app.chatRoom.friend.offline", 24);
             if (friend.isOnline()) {
                 button.addEventListener(UIEvents.CLICK, event -> {
                     if (event.button != 0 || minecraft.player == null) return;
@@ -284,7 +367,7 @@ public class ChatRoomUI extends AppUI {
             return button;
         }
         if (FriendStatus.PENDING_RECEIVED.equals(status)) {
-            Button button = createCompactButton("smartPhone.ui.app.chatRoom.friend.accept", 24, 0x443D5D7A);
+            Button button = createCompactButton("smartPhone.ui.app.chatRoom.friend.accept", 24);
             button.addEventListener(UIEvents.CLICK, event -> {
                 if (event.button != 0) return;
                 SmartPhoneClientUtil.acceptFriend(friend.getTargetUuid());
@@ -292,9 +375,9 @@ public class ChatRoomUI extends AppUI {
             return button;
         }
         if (FriendStatus.PENDING_SENT.equals(status)) {
-            return createCompactButton("smartPhone.ui.app.chatRoom.friend.waiting", 24, 0x22000000);
+            return createCompactButton("smartPhone.ui.app.chatRoom.friend.waiting", 24);
         }
-        Button button = createCompactButton("smartPhone.ui.app.chatRoom.friend.add", 24, 0x443D5D7A);
+        Button button = createCompactButton("smartPhone.ui.app.chatRoom.friend.add", 24);
         button.addEventListener(UIEvents.CLICK, event -> {
             if (event.button != 0) return;
             SmartPhoneClientUtil.requestFriend(friend.getTargetUuid());
@@ -303,9 +386,12 @@ public class ChatRoomUI extends AppUI {
     }
 
     private void showRoomMessages() {
-        inputBar.setVisible(true);
+        var preset = selectedPreset();
+        inputBar.setDisplay(!homeScreen.getPhoneUI().isPreview());
+        inputBar.setVisible(!homeScreen.getPhoneUI().isPreview());
         appScrollView.clearAllScrollViewChildren();
-        ChatRoomSnapshot snapshot = PhoneChatClientState.getRoom(selectedRoomId).orElse(null);
+        ChatRoomSnapshot snapshot = preset == null ? PhoneChatClientState.getRoom(selectedRoomId).orElse(null)
+                : new ChatRoomSnapshot(preset, preset.getDisplayNameKey());
         appScrollView.viewContainer.addChildren(createBackRow(snapshot));
         if (snapshot == null) {
             appScrollView.viewContainer.addChildren(createLabel(Component.translatable("smartPhone.ui.app.chatRoom.loading"), 6, ColorPattern.T_WHITE.color, 14, Horizontal.CENTER));
@@ -326,13 +412,15 @@ public class ChatRoomUI extends AppUI {
             layout.alignItems(AlignItems.CENTER);
             layout.paddingHorizontal(3);
             layout.gapAll(3);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(0x22000000)));
+        }).addClass("phone_row");
+        row.setId("chat_room_back");
         row.addChildren(
                 createFixedLabel(Component.translatable("smartPhone.ui.app.chatRoom.backRooms"), 5, ColorPattern.WHITE.color, 38, 10, Horizontal.LEFT),
                 createFlexLabel(snapshot == null ? Component.empty() : roomTitle(snapshot), 5, TEXT_SECONDARY, 10, Horizontal.RIGHT)
         );
         row.addEventListener(UIEvents.CLICK, event -> {
             if (event.button != 0) return;
+            homeScreen.getPhoneUI().selectPreviewChat(null, null);
             showRoomList();
         });
         return row;
@@ -341,20 +429,23 @@ public class ChatRoomUI extends AppUI {
     private UIElement createMessageBubble(ChatRoomMessage message) {
         boolean ownMessage = isOwnMessage(message);
         boolean hasImage = message.getImageData() != null && message.getImageData().length > 0;
-        boolean isImageOnly = hasImage && "[image]".equals(message.getBody());
+        boolean isImageOnly = hasImage && (message.getBody().isBlank() || "[image]".equals(message.getBody()));
 
         UIElement row = new UIElement().layout(layout -> {
             layout.widthPercent(96);
-            layout.flexDirection(FlexDirection.COLUMN);
-            layout.alignItems(ownMessage ? AlignItems.FLEX_END : AlignItems.FLEX_START);
+            layout.flexDirection(FlexDirection.ROW);
+            layout.alignItems(AlignItems.FLEX_START);
+            layout.justifyContent(ownMessage ? AlignContent.FLEX_END : AlignContent.FLEX_START);
+            layout.marginVertical(2);
+            layout.gapAll(4);
         });
 
         UIElement bubble = new UIElement().layout(layout -> {
-            layout.widthPercent(80);
+            layout.widthPercent(78);
             layout.flexDirection(FlexDirection.COLUMN);
             layout.paddingAll(3);
             layout.gapAll(1);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(ownMessage ? BUBBLE_SELF : BUBBLE_OTHER)));
+        }).addClass(ownMessage ? "phone_bubble_self" : "phone_bubble");
 
         bubble.addChildren(
                 createInlineLabel(Component.literal("%s · %s".formatted(displaySender(message), compactTime(message.getCreatedAtMillis()))), 4, TEXT_SECONDARY, 7, Horizontal.LEFT)
@@ -364,27 +455,38 @@ public class ChatRoomUI extends AppUI {
         if (hasImage) {
             UIElement imageElement = new UIElement().layout(layout -> {
                 layout.widthPercent(100);
-                layout.height(30);
+                layout.aspectRatio(160f / 90f);
             }).style(style -> style.backgroundTexture(messageImageTexture(message)));
+            imageElement.setId("chat_image_" + message.getMessageId());
             bubble.addChildren(imageElement);
         }
 
         // 文字内容（纯图片消息不重复显示 [image]）
         if (!isImageOnly) {
-            bubble.addChildren(createBodyLabel(message.getBody()));
+            bubble.addChildren(createBodyLabel(message.getBody().isBlank() ? Component.translatable("smartPhone.editor.emptyMessage").getString() : message.getBody()));
         }
 
-        row.addChildren(bubble);
+        row.setId("chat_message_" + message.getMessageId());
+        if (message.getMessageId().equals(selectedMessageId)) row.addClass("phone_selected_message");
+        if (homeScreen.getPhoneUI().isPreview()) {
+            row.addEventListener(UIEvents.CLICK, event -> {
+                if (event.button == 0) homeScreen.getPhoneUI().selectPreviewChat(selectedRoomId, message.getMessageId());
+            });
+        }
+        PlayerHeadElement avatar = new PlayerHeadElement(message.getSenderUuid(), message.getSenderName(), message.getAvatarPlayerName(), 12);
+        avatar.setId("chat_avatar_" + message.getMessageId());
+        if (ownMessage) row.addChildren(bubble, avatar);
+        else row.addChildren(avatar, bubble);
         return row;
     }
 
     private IGuiTexture messageImageTexture(ChatRoomMessage message) {
         Optional<ResourceLocation> texture = PhonePhotoAlbum.textureForMessageData(message.getMessageId(), message.getImageData());
-        return texture.<IGuiTexture>map(SpriteTexture::of).orElseGet(() -> new ColorRectTexture(0xFF312D3A));
+        return texture.<IGuiTexture>map(SpriteTexture::of).orElseGet(() -> new ColorRectTexture(0xFF313233));
     }
 
     private Button createAttachButton() {
-        Button button = createCompactButton("smartPhone.ui.app.chatRoom.attach", 18, 0x33000000);
+        Button button = createCompactButton("smartPhone.ui.app.chatRoom.attach", 18);
         button.setId("chat_room_attach");
         button.addEventListener(UIEvents.CLICK, event -> {
             if (event.button != 0) return;
@@ -394,6 +496,7 @@ public class ChatRoomUI extends AppUI {
     }
 
     private void showPhotoPicker() {
+        if (homeScreen.getPhoneUI().isPreview() && previewPhotoSelection == null) return;
         showingPhotoPicker = true;
         appScrollView.clearAllScrollViewChildren();
         appScrollView.viewContainer.addChildren(createPhotoPickerBackRow());
@@ -406,17 +509,26 @@ public class ChatRoomUI extends AppUI {
         appScrollView.viewContainer.addChildren(createPhotoPickerGrid(photos));
     }
 
+    /** Selects an album thumbnail into the editor draft without sending a chat message. */
+    public void choosePreviewPhoto(Consumer<byte[]> onSelected) {
+        if (!homeScreen.getPhoneUI().isPreview()) return;
+        previewPhotoSelection = onSelected;
+        showPhotoPicker();
+    }
+
     private UIElement createPhotoPickerBackRow() {
         UIElement row = new UIElement().layout(layout -> {
             layout.widthPercent(96);
             layout.height(15);
             layout.justifyContent(AlignContent.CENTER);
             layout.alignItems(AlignItems.CENTER);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(0x22000000)));
+        }).addClass("phone_row");
+        row.setId("chat_room_photo_back");
         row.addChildren(createFixedLabel(Component.translatable("smartPhone.ui.app.chatRoom.backChat"), 5, ColorPattern.WHITE.color, 60, 10, Horizontal.CENTER));
         row.addEventListener(UIEvents.CLICK, event -> {
             if (event.button != 0) return;
             showingPhotoPicker = false;
+            previewPhotoSelection = null;
             showRoomMessages();
         });
         return row;
@@ -431,7 +543,7 @@ public class ChatRoomUI extends AppUI {
             layout.justifyContent(AlignContent.CENTER);
             layout.paddingAll(2);
             layout.gapAll(3);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(ROW_BACKGROUND)));
+        }).addClass("phone_row");
         photos.forEach(photo -> grid.addChildren(createPickerTile(photo)));
         return grid;
     }
@@ -464,7 +576,7 @@ public class ChatRoomUI extends AppUI {
 
     private IGuiTexture photoTexture(PhonePhoto photo) {
         Optional<ResourceLocation> texture = PhonePhotoAlbum.textureFor(photo);
-        return texture.<IGuiTexture>map(SpriteTexture::of).orElseGet(() -> new ColorRectTexture(0xFF312D3A));
+        return texture.<IGuiTexture>map(SpriteTexture::of).orElseGet(() -> new ColorRectTexture(0xFF313233));
     }
 
     private void sendPhotoMessage(PhonePhoto photo) {
@@ -473,16 +585,24 @@ public class ChatRoomUI extends AppUI {
         if (thumbnailBytes.isEmpty()) {
             Toast.show(this, Component.translatable("smartPhone.ui.app.chatRoom.imageFailed"), 1.2f);
             showingPhotoPicker = false;
+            previewPhotoSelection = null;
             showRoomMessages();
             return;
         }
-        SmartPhoneClientUtil.sendChatRoomImage(selectedRoomId, thumbnailBytes.get());
+        if (previewPhotoSelection != null) {
+            var callback = previewPhotoSelection;
+            previewPhotoSelection = null;
+            callback.accept(thumbnailBytes.get());
+        }
+        else if (selectedPreset() != null) SmartPhoneClientUtil.sendPresetChat(selectedRoomId, "[image]", thumbnailBytes.get());
+        else SmartPhoneClientUtil.sendChatRoomImage(selectedRoomId, thumbnailBytes.get());
         showingPhotoPicker = false;
         showRoomMessages();
     }
 
     private Button createSendButton() {
-        Button button = createCompactButton("smartPhone.ui.app.chatRoom.send", 26, 0x33000000);
+        Button button = createCompactButton("smartPhone.ui.app.chatRoom.send", 26);
+        button.setId("chat_room_send");
         button.addEventListener(UIEvents.CLICK, event -> {
             if (event.button != 0) return;
             sendDraft();
@@ -490,14 +610,14 @@ public class ChatRoomUI extends AppUI {
         return button;
     }
 
-    private Button createCompactButton(String key, float width, int backgroundColor) {
+    private Button createCompactButton(String key, float width) {
         Button button = new Button();
         button.layout(layout -> {
             layout.width(width);
             layout.height(12);
             layout.justifyContent(AlignContent.CENTER);
             layout.alignItems(AlignItems.CENTER);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(backgroundColor)));
+        });
         button.text.layout(layout -> {
             layout.widthPercent(100);
             layout.heightPercent(100);
@@ -505,7 +625,6 @@ public class ChatRoomUI extends AppUI {
         });
         button.textStyle(textStyle -> {
             textStyle.fontSize(3.8f);
-            textStyle.textColor(ColorPattern.WHITE.color);
             textStyle.adaptiveWidth(false);
             textStyle.adaptiveHeight(false);
             textStyle.textWrap(TextWrap.HIDE);
@@ -517,7 +636,7 @@ public class ChatRoomUI extends AppUI {
         return button;
     }
 
-    private Button createFlexibleButton(String key, int backgroundColor) {
+    private Button createFlexibleButton(String key) {
         Button button = new Button();
         button.layout(layout -> {
             layout.flex(1);
@@ -525,7 +644,7 @@ public class ChatRoomUI extends AppUI {
             layout.height(12);
             layout.justifyContent(AlignContent.CENTER);
             layout.alignItems(AlignItems.CENTER);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(backgroundColor)));
+        });
         button.text.layout(layout -> {
             layout.widthPercent(100);
             layout.heightPercent(100);
@@ -533,7 +652,6 @@ public class ChatRoomUI extends AppUI {
         });
         button.textStyle(textStyle -> {
             textStyle.fontSize(4.2f);
-            textStyle.textColor(ColorPattern.WHITE.color);
             textStyle.adaptiveWidth(false);
             textStyle.adaptiveHeight(false);
             textStyle.textWrap(TextWrap.HIDE);
@@ -546,15 +664,17 @@ public class ChatRoomUI extends AppUI {
     }
 
     private void sendDraft() {
+        if (homeScreen.getPhoneUI().isPreview()) return;
         if (selectedRoomId == null) return;
         String body = normalize(draftText);
         if (body.isBlank()) {
             Toast.show(this, Component.translatable("smartPhone.ui.app.chatRoom.emptyMessage"), 1.2f);
             return;
         }
-        SmartPhoneClientUtil.sendChatRoomMessage(selectedRoomId, body);
+        if (selectedPreset() != null) SmartPhoneClientUtil.sendPresetChat(selectedRoomId, body, null);
+        else SmartPhoneClientUtil.sendChatRoomMessage(selectedRoomId, body);
         draftText = "";
-        inputArea.setLines(List.of(""));
+        inputArea.setText("");
     }
 
     private Label createBodyLabel(String body) {
@@ -620,7 +740,8 @@ public class ChatRoomUI extends AppUI {
 
     private String roomPreview(ChatRoomSummary room) {
         String latestPreview = normalize(room.getLatestPreview());
-        if (latestPreview.isBlank()) return Component.translatable("smartPhone.ui.app.chatRoom.noMessages").getString();
+        if (latestPreview.isBlank()) return Component.translatable(room.getMessageCount() == 0
+                ? "smartPhone.ui.app.chatRoom.noMessages" : "smartPhone.ui.app.chatRoom.messageCount", room.getMessageCount()).getString();
         // 图片消息占位文字显示为 [照片]
         if ("[image]".equals(latestPreview)) return Component.translatable("smartPhone.ui.app.chatRoom.imagePreview").getString();
         return latestPreview;
@@ -650,8 +771,8 @@ public class ChatRoomUI extends AppUI {
 
     private boolean isOwnMessage(ChatRoomMessage message) {
         if (minecraft.player == null || message.getSenderUuid() == null) return false;
-        UUID self = minecraft.player.getUUID();
-        return self.equals(message.getSenderUuid());
+        UUID self = homeScreen.getPhoneUI().getOwnerUuid();
+        return Objects.equals(self, message.getSenderUuid());
     }
 
     private String compactTime(long millis) {

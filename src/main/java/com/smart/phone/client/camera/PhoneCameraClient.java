@@ -2,31 +2,28 @@ package com.smart.phone.client.camera;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.smart.phone.ui.app.PhotoAlbumApp;
+import com.smart.phone.ui.PhoneUI;
+import com.lowdragmc.lowdraglib2.gui.holder.ModularUIScreen;
+import net.minecraft.client.gui.screens.PauseScreen;
+import net.neoforged.neoforge.client.event.ScreenEvent;
 import com.smart.phone.ui.data.PhoneInfo;
 import com.smart.phone.util.SmartPhoneClientUtil;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.client.event.InputEvent;
 import org.lwjgl.glfw.GLFW;
+import java.util.UUID;
 
 public class PhoneCameraClient {
     private static final float[] ZOOM_LEVELS = {1.0f, 1.5f, 2.0f, 3.0f};
     private static final int CAPTURE_DELAY_FRAMES = 2;
-    private static final int TEXT = 0xFFEAE7EE;
-    private static final int TEXT_MUTED = 0xAAEAE7EE;
-    private static final int LINE = 0xAAECEAF2;
-    private static final int ACCENT = 0xCCF0D36E;
-
     private static CameraSession session;
     private static CaptureRequest pendingCapture;
-    private static PhoneInfo queuedPhoneInfo;
-    private static int queuedPhoneOpenTicks;
+    private static CameraSession queuedReturn;
 
     public static boolean openPreview(PhoneInfo phoneInfo) {
         return openPreview(phoneInfo, 0);
@@ -34,34 +31,45 @@ public class PhoneCameraClient {
 
     public static boolean openPreview(PhoneInfo phoneInfo, int zoomIndex) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (phoneInfo == null || minecraft.player == null || minecraft.level == null) return false;
+        if (phoneInfo == null || phoneInfo.isBlocked() || minecraft.player == null || minecraft.level == null) return false;
 
         if (session == null) {
             session = new CameraSession(
                     phoneInfo,
                     clampZoomIndex(zoomIndex),
-                    minecraft.options.fov().get(),
                     minecraft.options.hideGui,
-                    minecraft.options.getCameraType()
+                    minecraft.options.getCameraType(),
+                    minecraft.screen instanceof ModularUIScreen screen
+                            && screen.getModularUI().ui.rootElement instanceof PhoneUI ? screen : null
             );
         } else {
             session.phoneInfo = phoneInfo;
             session.zoomIndex = clampZoomIndex(zoomIndex);
         }
 
+        queuedReturn = null;
         pendingCapture = null;
         minecraft.setScreen(null);
         minecraft.mouseHandler.grabMouse();
-        applyCameraOptions(session);
+        applyCameraOptions();
         return true;
     }
 
     public static void tick() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (queuedPhoneInfo != null && --queuedPhoneOpenTicks <= 0) {
-            PhoneInfo phoneInfo = queuedPhoneInfo;
-            queuedPhoneInfo = null;
-            SmartPhoneClientUtil.openUnlockedPhone(phoneInfo);
+        if (queuedReturn != null) {
+            CameraSession returning = queuedReturn;
+            queuedReturn = null;
+            if (minecraft.player != null && minecraft.level != null && minecraft.screen == null) {
+                if (returning.phoneScreen != null) {
+                    PhoneUI phone = (PhoneUI) returning.phoneScreen.getModularUI().ui.rootElement;
+                    phone.homeScreen.closeApp();
+                    minecraft.setScreen(returning.phoneScreen);
+                } else {
+                    SmartPhoneClientUtil.openUnlockedPhone(returning.phoneInfo);
+                }
+                minecraft.getSoundManager().resume();
+            }
         }
 
         CameraSession active = session;
@@ -76,19 +84,62 @@ public class PhoneCameraClient {
         }
 
         active.tickStatus();
-        applyCameraOptions(active);
+        applyCameraOptions();
     }
 
-    public static boolean renderCameraOverlay(GuiGraphics graphics) {
-        CameraSession active = session;
-        Minecraft minecraft = Minecraft.getInstance();
-        if (active == null || minecraft.player == null || minecraft.level == null || minecraft.screen != null) return false;
+    /** Esc first opens the vanilla pause screen, before InputEvent.Key is dispatched. */
+    public static void handleScreenOpening(ScreenEvent.Opening event) {
+        if (session != null && event.getNewScreen() instanceof PauseScreen) {
+            event.setCanceled(true);
+            closeToPhone();
+        }
+    }
 
-        updateLayout(active, minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight());
-        if (!isCaptureFrame()) {
-            drawOverlay(graphics, minecraft.font, active);
+    public static boolean isCameraActive() {
+        return session != null;
+    }
+
+    public static boolean receiveSecurity(UUID token, String action, boolean success, boolean enabled, PhoneInfo info, String error) {
+        CameraSession active = session != null ? session : queuedReturn;
+        if (active == null || active.phoneScreen == null) return false;
+        var phone = (PhoneUI) active.phoneScreen.getModularUI().ui.rootElement;
+        if (!token.equals(phone.getAccessToken())) return false;
+        phone.securityResult(action, success, enabled, info, error);
+        active.phoneInfo = phone.phoneInfo;
+        if (phone.isAccessLocked()) returnToLockedPhone(active);
+        return true;
+    }
+
+    public static boolean refreshPhoneInfo(UUID owner, PhoneInfo info) {
+        CameraSession active = session != null ? session : queuedReturn;
+        if (active == null || active.phoneScreen == null) return false;
+        var phone = (PhoneUI) active.phoneScreen.getModularUI().ui.rootElement;
+        if (!owner.equals(phone.getOwnerUuid())) return false;
+        active.phoneInfo = phone.phoneInfo = info;
+        if (info.isBlocked()) {
+            phone.configureAccess(phone.getAccessToken(), phone.isPasscodeEnabled(), true);
+            returnToLockedPhone(active);
         }
         return true;
+    }
+
+    private static void returnToLockedPhone(CameraSession active) {
+        closeSession();
+        queuedReturn = null;
+        Minecraft.getInstance().setScreen(active.phoneScreen);
+    }
+
+    public static boolean isOverlayVisible() {
+        return canHandleWorldInput();
+    }
+
+    public static float zoom() {
+        return session == null ? 1f : currentZoom(session);
+    }
+
+    public static Component statusText() {
+        return session != null && session.statusTicks > 0 ? session.status
+                : Component.translatable("smartPhone.ui.app.camera.controls");
     }
 
     public static void handleMouseButton(InputEvent.MouseButton.Pre event) {
@@ -171,7 +222,7 @@ public class PhoneCameraClient {
         } finally {
             CameraSession active = session;
             if (active != null) {
-                applyCameraOptions(active);
+                applyCameraOptions();
             }
         }
     }
@@ -181,10 +232,10 @@ public class PhoneCameraClient {
         Minecraft minecraft = Minecraft.getInstance();
         if (active == null || pendingCapture != null || minecraft.player == null || minecraft.level == null) return false;
 
-        updateLayout(active, minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight());
-        Layout layout = active.layout;
+        var layout = PhoneCameraHud.layoutFor(minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight());
+        var viewport = layout.viewport();
         pendingCapture = new CaptureRequest(
-                new CaptureViewport(layout.viewport.x, layout.viewport.y, layout.viewport.width, layout.viewport.height, layout.screenWidth, layout.screenHeight),
+                new CaptureViewport(viewport.x(), viewport.y(), viewport.width(), viewport.height(), layout.screenWidth(), layout.screenHeight()),
                 CAPTURE_DELAY_FRAMES
         );
         active.showStatus(Component.empty());
@@ -207,19 +258,21 @@ public class PhoneCameraClient {
     private static void openAlbumFromCamera() {
         CameraSession active = session;
         if (active == null || pendingCapture != null) return;
-        PhoneInfo phoneInfo = active.phoneInfo;
         closeSession();
-        SmartPhoneClientUtil.openPhoneApp(phoneInfo, new PhotoAlbumApp());
+        if (active.phoneScreen != null) {
+            PhoneUI phone = (PhoneUI) active.phoneScreen.getModularUI().ui.rootElement;
+            phone.homeScreen.openApp(new PhotoAlbumApp());
+            Minecraft.getInstance().setScreen(active.phoneScreen);
+        } else {
+            SmartPhoneClientUtil.openPhoneApp(active.phoneInfo, new PhotoAlbumApp());
+        }
     }
 
     private static void closeToPhone() {
-        CameraSession active = session;
-        if (active == null) return;
-        PhoneInfo phoneInfo = active.phoneInfo;
+        if (session == null) return;
+        CameraSession returning = session;
         closeSession();
-        queuedPhoneInfo = phoneInfo;
-        queuedPhoneOpenTicks = 2;
-        SmartPhoneClientUtil.openUnlockedPhone(phoneInfo);
+        queuedReturn = returning;
     }
 
     private static void closeToGame() {
@@ -232,10 +285,7 @@ public class PhoneCameraClient {
         pendingCapture = null;
         restoreCameraOptions(active);
         session = null;
-    }
-
-    private static boolean isCameraActive() {
-        return session != null;
+        PhoneCameraViewfinder.release();
     }
 
     private static boolean canHandleWorldInput() {
@@ -243,7 +293,7 @@ public class PhoneCameraClient {
         return session != null && minecraft.player != null && minecraft.level != null && minecraft.screen == null;
     }
 
-    private static boolean isCaptureFrame() {
+    static boolean isCaptureFrame() {
         return pendingCapture != null && pendingCapture.framesUntilCapture <= 0;
     }
 
@@ -251,7 +301,7 @@ public class PhoneCameraClient {
         CameraSession active = session;
         if (active == null) return;
         active.zoomIndex = clampZoomIndex(index);
-        applyCameraOptions(active);
+        applyCameraOptions();
     }
 
     private static int clampZoomIndex(int index) {
@@ -262,90 +312,16 @@ public class PhoneCameraClient {
         return ZOOM_LEVELS[active.zoomIndex];
     }
 
-    private static int targetFov(int originalFov, float zoom) {
-        float safeZoom = Math.max(1.0f, zoom);
-        int fov = Math.round(originalFov / safeZoom);
-        return Math.max(30, Math.min(110, fov));
-    }
-
-    private static void applyCameraOptions(CameraSession active) {
+    private static void applyCameraOptions() {
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.options.hideGui = false;
         minecraft.options.setCameraType(CameraType.FIRST_PERSON);
-        minecraft.options.fov().set(targetFov(active.originalFov, currentZoom(active)));
     }
 
     private static void restoreCameraOptions(CameraSession active) {
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.options.fov().set(active.originalFov);
         minecraft.options.hideGui = active.originalHideGui;
         minecraft.options.setCameraType(active.originalCameraType);
-    }
-
-    private static void updateLayout(CameraSession active, int width, int height) {
-        // 上方留出文字和间距空间
-        int topMargin = Math.max(28, height / 10);
-        int bottomMargin = Math.max(28, height / 10);
-        int sideMargin = Math.max(12, width / 32);
-
-        int availWidth = width - sideMargin * 2;
-        int availHeight = height - topMargin - bottomMargin;
-
-        // 16:9 横屏比例取景框，适配玩家屏幕
-        float targetRatio = 16f / 9f;
-        int vpWidth, vpHeight;
-        if (availWidth / (float) availHeight > targetRatio) {
-            vpHeight = availHeight;
-            vpWidth = Math.round(vpHeight * targetRatio);
-        } else {
-            vpWidth = availWidth;
-            vpHeight = Math.round(vpWidth / targetRatio);
-        }
-
-        int vpX = (width - vpWidth) / 2;
-        int vpY = topMargin + (availHeight - vpHeight) / 2;
-        Rect viewport = new Rect(vpX, vpY, vpWidth, vpHeight);
-        active.layout = new Layout(width, height, viewport);
-    }
-
-    private static void drawOverlay(GuiGraphics graphics, Font font, CameraSession active) {
-        Layout layout = active.layout;
-        drawViewfinder(graphics, layout.viewport);
-        drawCompactStatus(graphics, font, active, layout);
-        drawStatus(graphics, font, active, layout);
-    }
-
-    private static void drawViewfinder(GuiGraphics graphics, Rect viewport) {
-        int centerX = viewport.x + viewport.width / 2;
-        int centerY = viewport.y + viewport.height / 2;
-        int corner = Math.max(14, Math.min(viewport.width, viewport.height) / 9);
-        drawCorner(graphics, viewport.x, viewport.y, corner, 1, 1);
-        drawCorner(graphics, viewport.x + viewport.width, viewport.y, corner, -1, 1);
-        drawCorner(graphics, viewport.x, viewport.y + viewport.height, corner, 1, -1);
-        drawCorner(graphics, viewport.x + viewport.width, viewport.y + viewport.height, corner, -1, -1);
-        graphics.fill(centerX - 1, centerY - 8, centerX + 1, centerY + 8, ACCENT);
-        graphics.fill(centerX - 8, centerY - 1, centerX + 8, centerY + 1, ACCENT);
-    }
-
-    private static void drawCorner(GuiGraphics graphics, int x, int y, int length, int xDir, int yDir) {
-        int xEnd = x + length * xDir;
-        int yEnd = y + length * yDir;
-        graphics.fill(Math.min(x, xEnd), y - (yDir < 0 ? 1 : 0), Math.max(x, xEnd) + 1, y + (yDir > 0 ? 1 : 0), LINE);
-        graphics.fill(x - (xDir < 0 ? 1 : 0), Math.min(y, yEnd), x + (xDir > 0 ? 1 : 0), Math.max(y, yEnd) + 1, LINE);
-    }
-
-    private static void drawCompactStatus(GuiGraphics graphics, Font font, CameraSession active, Layout layout) {
-        Rect viewport = layout.viewport;
-        int textY = viewport.y - 16;
-        graphics.drawString(font, Component.translatable("smartPhone.ui.app.camera"), viewport.x, textY, TEXT_MUTED, false);
-        graphics.drawString(font, "%.1fx".formatted(currentZoom(active)), viewport.x + viewport.width - 28, textY, TEXT_MUTED, false);
-    }
-
-    private static void drawStatus(GuiGraphics graphics, Font font, CameraSession active, Layout layout) {
-        Rect viewport = layout.viewport;
-        Component text = active.statusTicks > 0 ? active.status : Component.translatable("smartPhone.ui.app.camera.previewHint");
-        int color = active.statusTicks > 0 ? 0xCCFFFFFF : 0x77FFFFFF;
-        graphics.drawCenteredString(font, text, viewport.x + viewport.width / 2, viewport.y + viewport.height + 10, color);
     }
 
     public record CaptureViewport(int x, int y, int width, int height, int screenWidth, int screenHeight) {
@@ -364,17 +340,16 @@ public class PhoneCameraClient {
     private static class CameraSession {
         private PhoneInfo phoneInfo;
         private int zoomIndex;
-        private final int originalFov;
         private final boolean originalHideGui;
         private final CameraType originalCameraType;
         private Component status = Component.empty();
         private int statusTicks;
-        private Layout layout = Layout.EMPTY;
+        private final ModularUIScreen phoneScreen;
 
-        private CameraSession(PhoneInfo phoneInfo, int zoomIndex, int originalFov, boolean originalHideGui, CameraType originalCameraType) {
+        private CameraSession(PhoneInfo phoneInfo, int zoomIndex, boolean originalHideGui, CameraType originalCameraType, ModularUIScreen phoneScreen) {
             this.phoneInfo = phoneInfo;
+            this.phoneScreen = phoneScreen;
             this.zoomIndex = zoomIndex;
-            this.originalFov = originalFov;
             this.originalHideGui = originalHideGui;
             this.originalCameraType = originalCameraType;
         }
@@ -389,11 +364,4 @@ public class PhoneCameraClient {
         }
     }
 
-    private record Layout(int screenWidth, int screenHeight, Rect viewport) {
-        private static final Layout EMPTY = new Layout(0, 0, Rect.EMPTY);
-    }
-
-    private record Rect(int x, int y, int width, int height) {
-        private static final Rect EMPTY = new Rect(0, 0, 0, 0);
-    }
 }

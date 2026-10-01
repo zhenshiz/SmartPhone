@@ -32,6 +32,7 @@ public final class SmartPhoneAccessors {
     @ViScriptRegisterAccessors
     public static void register(RegisterAccessorEvent event) {
         event.register(PhoneInfo.class, PhoneInfo::new);
+        event.register(com.smart.phone.ui.data.PhoneCharacters.class, com.smart.phone.ui.data.PhoneCharacters::new);
         event.register(OfficialMessage.class, OfficialMessage::new);
         event.register(ChatRoomMessage.class, ChatRoomMessage::new);
         event.register(ChatRoom.class, ChatRoom::new);

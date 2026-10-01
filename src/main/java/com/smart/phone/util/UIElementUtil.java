@@ -2,7 +2,6 @@ package com.smart.phone.util;
 
 import com.lowdragmc.lowdraglib2.configurator.ui.SearchComponentConfigurator;
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
-import com.lowdragmc.lowdraglib2.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.data.TextWrap;
 import com.lowdragmc.lowdraglib2.gui.ui.data.Vertical;
@@ -102,7 +101,6 @@ public class UIElementUtil {
             layout.widthPercent(30);
             layout.heightPercent(100);
         });
-        button.style(style -> style.backgroundTexture(new ColorRectTexture(ColorPattern.T_GRAY.color)));
         button.addEventListener(UIEvents.CLICK, event -> onDirectionClick.accept(dir));
         return button;
     }

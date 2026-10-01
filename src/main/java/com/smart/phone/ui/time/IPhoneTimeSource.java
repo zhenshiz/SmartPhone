@@ -50,6 +50,7 @@ public abstract class IPhoneTimeSource implements ILDLRegister<IPhoneTimeSource,
         configuratorGroup.setCanCollapse(false);
         configuratorGroup.setCollapse(false);
         configuratorGroup.lineContainer.setDisplay(TaffyDisplay.NONE);
+        configuratorGroup.addConfigurators(phoneInfo.getIPhoneTimeSource().createDirectConfigurator());
         SearchComponentConfigurator<IPhoneTimeSource> typeConfigurator = new SearchComponentConfigurator<>("smartPhone.data.phoneTimeSource.customTimeSource.segments",
                 phoneInfo::getIPhoneTimeSource,
                 phoneTimeSource -> {

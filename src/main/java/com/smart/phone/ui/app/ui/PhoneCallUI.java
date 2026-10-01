@@ -130,7 +130,7 @@ public class PhoneCallUI extends AppUI {
             layout.alignItems(AlignItems.CENTER);
             layout.paddingAll(3);
             layout.gapAll(4);
-        }).style(style -> style.backgroundTexture(new ColorRectTexture(0x33000000)));
+        }).addClass("phone_row");
 
         UIElement info = new UIElement().layout(layout -> {
             layout.flex(1);
@@ -224,7 +224,6 @@ public class PhoneCallUI extends AppUI {
         });
         button.textStyle(textStyle -> {
             textStyle.fontSize(4.5f);
-            textStyle.textColor(ColorPattern.WHITE.color);
             textStyle.adaptiveWidth(false);
             textStyle.adaptiveHeight(false);
             textStyle.textWrap(TextWrap.HIDE);

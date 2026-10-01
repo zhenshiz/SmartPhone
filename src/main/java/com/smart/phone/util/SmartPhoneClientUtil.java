@@ -2,18 +2,18 @@ package com.smart.phone.util;
 
 import com.lowdragmc.lowdraglib2.gui.holder.ModularUIScreen;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.ui.UI;
-import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.TextElement;
 import com.lowdragmc.lowdraglib2.integration.kjs.KJSBindings;
 import com.lowdragmc.lowdraglib2.networking.rpc.RPCPacketDistributor;
+import com.smart.phone.Config;
+import com.smart.phone.PhoneItem;
+import com.smart.phone.client.HeldPhoneClient;
 import com.smart.phone.client.chat.PhoneChatClientState;
 import com.smart.phone.client.message.PhoneMessageClientState;
 import com.smart.phone.network.c2s.C2SPayload;
 import com.smart.phone.network.c2s.ChatRoomImagePayload;
 import com.smart.phone.client.call.PhoneCallClientState;
 import com.smart.phone.ui.PhoneUI;
-import com.smart.phone.ui.SettingUI;
+import com.smart.phone.ui.HeldPhoneScreen;
 import com.smart.phone.ui.app.IApp;
 import com.smart.phone.ui.app.PhoneCall;
 import com.smart.phone.ui.app.ui.ChatRoomUI;
@@ -36,52 +36,131 @@ import java.util.UUID;
 @KJSBindings(clientOnly = true)
 public class SmartPhoneClientUtil {
 
+    private static UUID activeAccessToken;
+
+    public static void setPhoneOwnerName(UUID owner, String name) {
+        if (Minecraft.getInstance().screen instanceof ModularUIScreen screen
+                && screen.getModularUI().ui.rootElement instanceof PhoneUI phone && owner.equals(phone.getOwnerUuid())) {
+            phone.setOwnerName(name);
+        }
+    }
+
+    public static void configurePhoneAccess(UUID token, boolean enabled, boolean locked) {
+        if (Minecraft.getInstance().screen instanceof ModularUIScreen screen
+                && screen.getModularUI().ui.rootElement instanceof PhoneUI phone) {
+            activeAccessToken = token;
+            phone.configureAccess(token, enabled, locked);
+        }
+    }
+
+    public static void receivePhoneSecurity(UUID token, String action, boolean success, boolean enabled, PhoneInfo info, String error) {
+        if (com.smart.phone.client.camera.PhoneCameraClient.receiveSecurity(token, action, success, enabled, info, error)) return;
+        if (Minecraft.getInstance().screen instanceof ModularUIScreen screen
+                && screen.getModularUI().ui.rootElement instanceof PhoneUI phone
+                && token.equals(phone.getAccessToken())) phone.securityResult(action, success, enabled, info, error);
+    }
+
+    public static void tickPhoneAccess() {
+        if (activeAccessToken == null) return;
+        var mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) { activeAccessToken = null; return; }
+        if (com.smart.phone.client.camera.PhoneCameraClient.isCameraActive()) return;
+        if (mc.screen instanceof ModularUIScreen screen && screen.getModularUI().ui.rootElement instanceof PhoneUI phone
+                && activeAccessToken.equals(phone.getAccessToken())) return;
+        RPCPacketDistributor.rpcToServer(C2SPayload.CLOSE_PHONE, activeAccessToken);
+        activeAccessToken = null;
+    }
+
     @Info("打开手机")
     public static void openPhone(PhoneInfo phoneInfo) {
         phoneInfo.ensureDefaultContent();
-        PhoneUI phoneUI = new PhoneUI(phoneInfo);
-        ModularUI modularUI = new ModularUI(UI.of(phoneUI, PhoneUI::getAutoGuiScaledSize));
-        Minecraft.getInstance().setScreen(new ModularUIScreen(modularUI, Component.empty()));
+        displayPhone(phoneInfo, false, null, Minecraft.getInstance().player.getUUID());
+    }
+
+    public static void openPhone(UUID ownerUuid, PhoneInfo phoneInfo) {
+        phoneInfo.ensureDefaultContent();
+        displayPhone(phoneInfo, false, null, ownerUuid);
+    }
+
+    public static void openHeldPhone(UUID ownerUuid, PhoneInfo phoneInfo) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!Config.HELD_PHONE_MODE.get() || !HeldPhoneClient.isPhoneInMainHand()
+                || !(minecraft.screen instanceof HeldPhoneScreen heldScreen)) return;
+        phoneInfo.ensureDefaultContent();
+        PhoneUI phoneUI = heldScreen.getPhoneUI();
+        phoneUI.phoneInfo = phoneInfo;
+        phoneUI.setOwnerUuid(ownerUuid);
+        phoneUI.homeScreen.reloadAppView();
+        heldScreen.markSynced();
+    }
+
+    public static void closeRejectedHeldPhone() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen instanceof HeldPhoneScreen) minecraft.setScreen(null);
+    }
+
+    public static void showHeldPhoneImmediately() {
+        PhoneInfo phoneInfo = new PhoneInfo();
+        phoneInfo.ensureDefaultContent();
+        Minecraft minecraft = Minecraft.getInstance();
+        displayPhone(phoneInfo, false, null, PhoneItem.ownerOf(
+                minecraft.player.getMainHandItem(), minecraft.player.getUUID()));
+        if (Minecraft.getInstance().screen instanceof HeldPhoneScreen heldScreen) {
+            heldScreen.awaitSync();
+        }
     }
 
     public static void openUnlockedPhone(PhoneInfo phoneInfo) {
         phoneInfo.ensureDefaultContent();
-        PhoneUI phoneUI = new PhoneUI(phoneInfo);
-        phoneUI.screenContainer.removeChild(phoneUI.lockScreen);
-        ModularUI modularUI = new ModularUI(UI.of(phoneUI, PhoneUI::getAutoGuiScaledSize));
-        Minecraft.getInstance().setScreen(new ModularUIScreen(modularUI, Component.empty()));
+        displayPhone(phoneInfo, true, null, Minecraft.getInstance().player.getUUID());
     }
 
     public static void openPhoneApp(PhoneInfo phoneInfo, IApp app) {
         phoneInfo.ensureDefaultContent();
-        PhoneUI phoneUI = new PhoneUI(phoneInfo);
-        phoneUI.screenContainer.removeChild(phoneUI.lockScreen);
-        phoneUI.homeScreen.openApp(app);
-        ModularUI modularUI = new ModularUI(UI.of(phoneUI, PhoneUI::getAutoGuiScaledSize));
-        Minecraft.getInstance().setScreen(new ModularUIScreen(modularUI, Component.empty()));
+        displayPhone(phoneInfo, true, app, Minecraft.getInstance().player.getUUID());
     }
 
     @Info("更新玩家手机信息")
     public static void setPhoneInfoByPlayer(PhoneInfo phoneInfo) {
-        RPCPacketDistributor.rpcToServer(C2SPayload.SAVE_PHONE_INFO, phoneInfo);
+        RPCPacketDistributor.rpcToServer(C2SPayload.SAVE_PHONE_INFO, currentPhoneOwner(), phoneInfo);
     }
 
-    @Info("打开配置文件")
-    public static void openSetting(PhoneInfo phoneInfo) {
-        phoneInfo.ensureDefaultContent();
-        SettingUI settingUI = new SettingUI(phoneInfo);
-        ModularUI modularUI = new ModularUI(UI.of(settingUI, SettingUI::getAutoGuiScaledSize));
-        Minecraft.getInstance().setScreen(new ModularUIScreen(modularUI, Component.empty()));
+    public static void sendPresetChat(String roomId, String body, byte[] imageData) {
+        RPCPacketDistributor.rpcToServer(C2SPayload.SEND_PRESET_CHAT, currentPhoneOwner(), body,
+                new com.smart.phone.network.c2s.ChatRoomImagePayload(roomId, imageData));
+    }
+
+    public static void refreshPhoneInfo(UUID owner, PhoneInfo info) {
+        if (com.smart.phone.client.camera.PhoneCameraClient.refreshPhoneInfo(owner, info)) return;
+        if (Minecraft.getInstance().screen instanceof ModularUIScreen screen
+                && screen.getModularUI().ui.rootElement instanceof PhoneUI phone
+                && owner.equals(phone.getOwnerUuid())) {
+            phone.phoneInfo = info;
+            if (phone.homeScreen.appUI instanceof ChatRoomUI chat) chat.refreshFromState();
+            else if (phone.homeScreen.iApp != null) phone.homeScreen.openApp(phone.homeScreen.iApp);
+            phone.homeScreen.reloadAppView();
+        }
     }
 
     public static void openPhoneCall(PhoneInfo phoneInfo, UUID sessionId, UUID callerUuid, String callerName) {
         phoneInfo.ensureDefaultContent();
         PhoneCallClientState.incoming(sessionId, callerUuid, callerName);
-        PhoneUI phoneUI = new PhoneUI(phoneInfo);
-        phoneUI.screenContainer.removeChild(phoneUI.lockScreen);
-        phoneUI.homeScreen.openApp(new PhoneCall());
-        ModularUI modularUI = new ModularUI(UI.of(phoneUI, PhoneUI::getAutoGuiScaledSize));
-        Minecraft.getInstance().setScreen(new ModularUIScreen(modularUI, Component.empty()));
+        if (phoneInfo.isBlocked()) return;
+        if (Minecraft.getInstance().screen instanceof ModularUIScreen screen
+                && screen.getModularUI().ui.rootElement instanceof PhoneUI phone && phone.isAccessLocked()) return;
+        displayPhone(phoneInfo, true, new PhoneCall(), Minecraft.getInstance().player.getUUID());
+    }
+
+    private static void displayPhone(PhoneInfo phoneInfo, boolean unlocked, IApp app, UUID ownerUuid) {
+        boolean heldMode = Config.HELD_PHONE_MODE.get() && HeldPhoneClient.isPhoneInMainHand();
+        PhoneUI phoneUI = new PhoneUI(phoneInfo, heldMode);
+        phoneUI.setOwnerUuid(ownerUuid);
+        if (unlocked && !phoneInfo.isBlocked()) phoneUI.screenContainer.removeChild(phoneUI.lockScreen);
+        if (app != null) phoneUI.homeScreen.openApp(app);
+        ModularUI modularUI = new ModularUI(com.smart.phone.ui.PhoneTheme.create(phoneUI, PhoneUI::getAutoGuiScaledSize));
+        Minecraft.getInstance().setScreen(heldMode
+                ? new HeldPhoneScreen(modularUI, phoneUI)
+                : new ModularUIScreen(modularUI, Component.empty()));
     }
 
     public static void callRinging(UUID sessionId, UUID calleeUuid, String calleeName) {
@@ -151,11 +230,19 @@ public class SmartPhoneClientUtil {
     }
 
     public static void markOfficialMessageRead(UUID messageId) {
-        RPCPacketDistributor.rpcToServer(C2SPayload.OFFICIAL_MESSAGE_MARK_READ, messageId);
+        RPCPacketDistributor.rpcToServer(C2SPayload.OFFICIAL_MESSAGE_MARK_READ, currentPhoneOwner(), messageId);
     }
 
     public static void deleteOfficialMessage(UUID messageId) {
-        RPCPacketDistributor.rpcToServer(C2SPayload.OFFICIAL_MESSAGE_DELETE, messageId);
+        RPCPacketDistributor.rpcToServer(C2SPayload.OFFICIAL_MESSAGE_DELETE, currentPhoneOwner(), messageId);
+    }
+
+    private static UUID currentPhoneOwner() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen instanceof ModularUIScreen screen
+                && screen.getModularUI().ui.rootElement instanceof PhoneUI phoneUI
+                && phoneUI.getOwnerUuid() != null) return phoneUI.getOwnerUuid();
+        return minecraft.player.getUUID();
     }
 
     public static void requestChatRooms() {

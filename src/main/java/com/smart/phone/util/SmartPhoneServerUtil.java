@@ -3,6 +3,8 @@ package com.smart.phone.util;
 import com.lowdragmc.lowdraglib2.integration.kjs.KJSBindings;
 import com.lowdragmc.lowdraglib2.networking.rpc.RPCPacketDistributor;
 import com.smart.phone.SmartPhone;
+import com.smart.phone.PhoneItem;
+import com.smart.phone.SmartPhoneRegistries;
 import com.smart.phone.network.s2c.S2CPayload;
 import com.smart.phone.ui.data.OfficialMessage;
 import com.smart.phone.ui.data.OfficialMessagesData;
@@ -15,8 +17,13 @@ import com.smart.phone.ui.data.social.PhoneSocialSavedData;
 import dev.latvian.mods.kubejs.typings.Info;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.LevelResource;
 
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.UUID;
 
@@ -28,7 +35,35 @@ public class SmartPhoneServerUtil {
 
     @Info("打开手机")
     public static void openPhone(ServerPlayer player) {
-        RPCPacketDistributor.rpcToPlayer(player, S2CPayload.OPEN_PHONE, SmartPhone.getPhoneSavedData().getPhoneInfo(player));
+        com.smart.phone.security.PhoneSecurityServer.open(player, player.getUUID(), false);
+    }
+
+    public static void openPhone(ServerPlayer player, ItemStack stack) {
+        UUID owner = stack.is(SmartPhoneRegistries.PHONE.get())
+                ? PhoneItem.bindIfUnbound(stack, player) : player.getUUID();
+        if (!isKnownPlayer(player.getServer(), owner)) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("smartPhone.command.bind.unknownPlayer", owner.toString()));
+            return;
+        }
+        com.smart.phone.security.PhoneSecurityServer.open(player, owner, false);
+    }
+
+    public static void openHeldPhone(ServerPlayer player) {
+        UUID owner = PhoneItem.bindIfUnbound(player.getMainHandItem(), player);
+        if (!isKnownPlayer(player.getServer(), owner)) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("smartPhone.command.bind.unknownPlayer", owner.toString()));
+            RPCPacketDistributor.rpcToPlayer(player, S2CPayload.OPEN_HELD_PHONE_REJECTED);
+            return;
+        }
+        com.smart.phone.security.PhoneSecurityServer.open(player, owner, true);
+    }
+
+    public static boolean isKnownPlayer(MinecraftServer server, UUID uuid) {
+        if (server == null || uuid == null) return false;
+        PhoneSavedData savedData = SmartPhone.getPhoneSavedData();
+        return (savedData != null && savedData.hasPhoneInfo(uuid))
+                || server.getPlayerList().getPlayer(uuid) != null
+                || Files.isRegularFile(server.getWorldPath(LevelResource.PLAYER_DATA_DIR).resolve(uuid + ".dat"));
     }
 
     @Info("重置本地玩家信息")
@@ -38,15 +73,24 @@ public class SmartPhoneServerUtil {
 
     @Info("更新玩家手机信息")
     public static void setPhoneInfoByPlayer(ServerPlayer player, PhoneInfo phoneInfo) {
-        PhoneSavedData savedData = SmartPhone.getPhoneSavedData();
-        OfficialMessagesData serverMessages = savedData.getPhoneInfo(player).getOrCreateExtensionData(OfficialMessagesData.class);
-        phoneInfo.getOrCreateExtensionData(OfficialMessagesData.class).setMessages(serverMessages.getMessages());
-        savedData.setPhoneInfo(player, phoneInfo);
+        setPhoneInfoByPlayer(player, player.getUUID(), phoneInfo);
     }
 
-    @Info("打开配置文件")
-    public static void openSetting(ServerPlayer player) {
-        RPCPacketDistributor.rpcToPlayer(player, S2CPayload.OPEN_SETTING, SmartPhone.getPhoneSavedData().getPhoneInfo(player));
+    public static void setPhoneInfoByPlayer(ServerPlayer player, UUID ownerUuid, PhoneInfo phoneInfo) {
+        if (!canAccessPhoneInfo(player, ownerUuid) || phoneInfo == null) return;
+        PhoneSavedData savedData = SmartPhone.getPhoneSavedData();
+        // 管理员开关以服务端为准，普通手机保存不能覆盖或撤销。
+        var current = savedData.getPhoneInfo(ownerUuid);
+        phoneInfo.setBlocked(current.isBlocked());
+        phoneInfo.setHideDate(current.isHideDate());
+        phoneInfo.setHideStatusIcons(current.isHideStatusIcons());
+        phoneInfo.setHideOwnerName(current.isHideOwnerName());
+        phoneInfo.setHideLockIcon(current.isHideLockIcon());
+        OfficialMessagesData serverMessages = savedData.getPhoneInfo(ownerUuid).getOrCreateExtensionData(OfficialMessagesData.class);
+        phoneInfo.getOrCreateExtensionData(OfficialMessagesData.class).setMessages(serverMessages.getMessages());
+        phoneInfo.getOrCreateExtensionData(com.smart.phone.ui.data.PresetChatsData.class).setRooms(
+                savedData.getPhoneInfo(ownerUuid).getOrCreateExtensionData(com.smart.phone.ui.data.PresetChatsData.class).getRooms());
+        savedData.setPhoneInfo(ownerUuid, phoneInfo);
     }
 
     @Info("发送官方消息")
@@ -61,7 +105,9 @@ public class SmartPhoneServerUtil {
         PhoneInfo phoneInfo = SmartPhone.getPhoneSavedData().getPhoneInfo(player);
         phoneInfo.getOrCreateExtensionData(OfficialMessagesData.class).addMessage(message);
         SmartPhone.getPhoneSavedData().setPhoneInfo(player, phoneInfo);
-        RPCPacketDistributor.rpcToPlayer(player, S2CPayload.OFFICIAL_MESSAGE_RECEIVED, message);
+        if (canAccessPhoneInfo(player, player.getUUID())) {
+            RPCPacketDistributor.rpcToPlayer(player, S2CPayload.OFFICIAL_MESSAGE_RECEIVED, message);
+        }
     }
 
     public static void sendOfficialMessage(Collection<ServerPlayer> players, String title, String body) {
@@ -69,17 +115,52 @@ public class SmartPhoneServerUtil {
     }
 
     public static void markOfficialMessageRead(ServerPlayer player, UUID messageId) {
-        if (player == null || messageId == null) return;
-        PhoneInfo phoneInfo = SmartPhone.getPhoneSavedData().getPhoneInfo(player);
+        markOfficialMessageRead(player, player.getUUID(), messageId);
+    }
+
+    public static void markOfficialMessageRead(ServerPlayer player, UUID ownerUuid, UUID messageId) {
+        if (!canAccessPhoneInfo(player, ownerUuid) || messageId == null) return;
+        PhoneInfo phoneInfo = SmartPhone.getPhoneSavedData().getPhoneInfo(ownerUuid);
         phoneInfo.getOrCreateExtensionData(OfficialMessagesData.class).markRead(messageId);
-        SmartPhone.getPhoneSavedData().setPhoneInfo(player, phoneInfo);
+        SmartPhone.getPhoneSavedData().setPhoneInfo(ownerUuid, phoneInfo);
     }
 
     public static void deleteOfficialMessage(ServerPlayer player, UUID messageId) {
-        if (player == null || messageId == null) return;
-        PhoneInfo phoneInfo = SmartPhone.getPhoneSavedData().getPhoneInfo(player);
+        deleteOfficialMessage(player, player.getUUID(), messageId);
+    }
+
+    public static void deleteOfficialMessage(ServerPlayer player, UUID ownerUuid, UUID messageId) {
+        if (!canAccessPhoneInfo(player, ownerUuid) || messageId == null) return;
+        PhoneInfo phoneInfo = SmartPhone.getPhoneSavedData().getPhoneInfo(ownerUuid);
         if (phoneInfo.getOrCreateExtensionData(OfficialMessagesData.class).deleteMessage(messageId)) {
-            SmartPhone.getPhoneSavedData().setPhoneInfo(player, phoneInfo);
+            SmartPhone.getPhoneSavedData().setPhoneInfo(ownerUuid, phoneInfo);
+        }
+    }
+
+    public static boolean canAccessPhoneInfo(ServerPlayer player, UUID ownerUuid) {
+        return com.smart.phone.security.PhoneSecurityServer.canAccess(player, ownerUuid);
+    }
+
+    public static void sendPresetChat(ServerPlayer player, UUID owner, String body,
+                                      com.smart.phone.network.c2s.ChatRoomImagePayload payload) {
+        if (!canAccessPhoneInfo(player, owner) || payload == null) return;
+        var data = SmartPhone.getPhoneSavedData();
+        var info = data.getPhoneInfo(owner);
+        var room = info.getOrCreateExtensionData(com.smart.phone.ui.data.PresetChatsData.class)
+                .findRoom(payload.getRoomId()).orElse(null);
+        if (room == null) return;
+        byte[] image = payload.getImageData();
+        if (image != null && image.length > MAX_IMAGE_DATA_SIZE) return;
+        String text = normalizeChatBody(body);
+        if (text.isBlank() && (image == null || image.length == 0)) return;
+        String name = PhoneOwnerResolver.name(player.getServer(), owner);
+        if (name == null) name = player.getGameProfile().getName();
+        room.addMessage(new ChatRoomMessage(room.getRoomId(), owner, name, text, image));
+        data.setPhoneInfo(owner, info);
+        for (var viewer : player.getServer().getPlayerList().getPlayers()) {
+            if (canAccessPhoneInfo(viewer, owner)) {
+                RPCPacketDistributor.rpcToPlayer(viewer, S2CPayload.PHONE_INFO_UPDATED, owner, info);
+            }
         }
     }
 
@@ -101,7 +182,10 @@ public class SmartPhoneServerUtil {
         String normalizedBody = normalizeChatBody(body);
         if (normalizedBody.isBlank()) return;
         if (!canUseChatRoom(player, roomId)) return;
-        ChatRoomMessage message = chatRoomSavedData.addPlayerMessage(roomId, player.getUUID(), player.getGameProfile().getName(), normalizedBody);
+        UUID owner = com.smart.phone.security.PhoneSecurityServer.activeOwner(player);
+        String name = PhoneOwnerResolver.name(player.getServer(), owner);
+        ChatRoomMessage message = chatRoomSavedData.addPlayerMessage(roomId, owner,
+                name == null ? player.getGameProfile().getName() : name, normalizedBody);
         sendChatMessageToRecipients(player, message);
     }
 
@@ -110,11 +194,15 @@ public class SmartPhoneServerUtil {
         if (player == null || chatRoomSavedData == null) return;
         if (imageData == null || imageData.length == 0 || imageData.length > MAX_IMAGE_DATA_SIZE) return;
         if (!canUseChatRoom(player, roomId)) return;
-        ChatRoomMessage message = chatRoomSavedData.addPlayerImageMessage(roomId, player.getUUID(), player.getGameProfile().getName(), imageData);
+        UUID owner = com.smart.phone.security.PhoneSecurityServer.activeOwner(player);
+        String name = PhoneOwnerResolver.name(player.getServer(), owner);
+        ChatRoomMessage message = chatRoomSavedData.addPlayerImageMessage(roomId, owner,
+                name == null ? player.getGameProfile().getName() : name, imageData);
         sendChatMessageToRecipients(player, message);
     }
 
     public static void requestFriendList(ServerPlayer player) {
+        if (player == null || !com.smart.phone.security.PhoneSecurityServer.canUsePhone(player)) return;
         PhoneSocialSavedData socialSavedData = getPhoneSocialSavedData(player);
         if (player == null || socialSavedData == null) return;
         RPCPacketDistributor.rpcToPlayer(player, S2CPayload.FRIEND_LIST_UPDATE, socialSavedData.createSnapshot(player));
@@ -204,6 +292,7 @@ public class SmartPhoneServerUtil {
         if (ChatRoomSavedData.isDirectRoom(message.getRoomId())) {
             sender.getServer().getPlayerList().getPlayers().stream()
                     .filter(target -> ChatRoomSavedData.isDirectParticipant(message.getRoomId(), target.getUUID()))
+                    .filter(com.smart.phone.security.PhoneSecurityServer::canUsePhone)
                     .forEach(target -> RPCPacketDistributor.rpcToPlayer(target, S2CPayload.CHAT_ROOM_MESSAGE, message));
             return;
         }

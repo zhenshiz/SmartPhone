@@ -38,6 +38,16 @@ public class PhoneInfo implements IConfigurable, IPersistedSerializable {
     //setting
     @Configurable(name = "smartPhone.data.phoneInfo.phoneWallpaper")
     private ResourceLocation phoneWallpaper = SmartPhone.id("textures/ui/default_wallpaper.png");
+    @Configurable(name = "smartPhone.data.phoneInfo.blocked")
+    private boolean blocked;
+    @Configurable(name = "smartPhone.data.phoneInfo.hideDate")
+    private boolean hideDate;
+    @Configurable(name = "smartPhone.data.phoneInfo.hideStatusIcons")
+    private boolean hideStatusIcons;
+    @Configurable(name = "smartPhone.data.phoneInfo.hideOwnerName")
+    private boolean hideOwnerName;
+    @Configurable(name = "smartPhone.data.phoneInfo.hideLockIcon")
+    private boolean hideLockIcon;
     @Persisted
     private IPhoneTimeSource iPhoneTimeSource = new RealTimeSource();
     //ui state
